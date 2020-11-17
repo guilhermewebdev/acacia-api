@@ -1,1 +1,1 @@
-web: uvicorn api.asgi:application 
+web: uvicorn api.asgi:application --port $PORT --host 0.0.0.0
