@@ -107,6 +107,14 @@ class Professional(models.Model):
         related_name='professional',
         on_delete=models.CASCADE,
     )
+    about = models.TextField(
+        verbose_name='About text',
+        null=True,
+        max_length=1000,
+    )
+    avg_price = models.IntegerField(
+        verbose_name='Average Price',
+    )
     state = models.CharField(
         choices=STATES,
         validators=[ValidateChoices(STATES)],
