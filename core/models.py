@@ -98,7 +98,7 @@ class User(AbstractUser):
 
     @property
     def is_professional(self):
-        return is self.professional
+        return hasattr(self, 'professional')
 
 class Professional(models.Model):
     user = models.OneToOneField(
