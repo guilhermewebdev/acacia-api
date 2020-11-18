@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import validate_email, RegexValidator, validate_slug, MinValueValidator
+from django.core.validators import MaxValueValidator, validate_email, RegexValidator, validate_slug, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.contrib.postgres.fields import ArrayField
@@ -161,4 +161,19 @@ class Professional(models.Model):
     coren = models.CharField(
         max_length=6,
         validators=[RegexValidator('^[0-9]{2}\.?[0-9]{3}$')],
+    )
+
+class Rating(models.Model):
+    client = models.ForeignKey(
+        User,
+        on_delete=models.DO_NOTHING,
+        related_name='rates',
+    )
+    professional = models.ForeignKey(
+        Professional,
+        on_delete=models.CASCADE,
+        related_name='rates',
+    )
+    grade = models.IntegerField(
+        validators=[MaxValueValidator(5), MinValueValidator(1)]
     )
