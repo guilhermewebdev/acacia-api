@@ -98,7 +98,21 @@ class User(AbstractUser):
     full_name = models.CharField(
         max_length=200,
     )
-
+    born = models.DateField(
+        verbose_name='Birth date'
+    )
+    avatar = models.ImageField(
+        verbose_name='Avatar',
+        upload_to='avatars',
+        height_field=300,
+        width_field=300,
+    )
+    celphone = models.CharField(
+        max_length=11,
+    )
+    telephone = models.CharField(
+        max_length=10,
+    )
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['password']
 
@@ -121,7 +135,7 @@ class Professional(models.Model):
         null=True,
         max_length=1000,
     )
-    avg_price = models.IntegerField(
+    avg_price = models.FloatField(
         verbose_name='Average Price',
         validators=[MinValueValidator(65)]
     )
