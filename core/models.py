@@ -96,6 +96,10 @@ class User(AbstractUser):
         max_length=200,
     )
 
+    @property
+    def is_professional(self):
+        return is self.professional
+
 class Professional(models.Model):
     user = models.OneToOneField(
         User,
