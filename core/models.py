@@ -115,6 +115,9 @@ class Professional(models.Model):
     avg_price = models.IntegerField(
         verbose_name='Average Price',
     )
+    availability=models.CharField(
+        max_length=100,
+    )
     state = models.CharField(
         choices=STATES,
         validators=[ValidateChoices(STATES)],
