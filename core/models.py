@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import validate_email, RegexValidator, validate_slug
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
+from django.contrib.postgres.fields import ArrayField
 from functools import reduce
 import re
 
@@ -128,10 +129,13 @@ class Professional(models.Model):
     rg = models.CharField(
         max_length=12,
     )
-    occupation = models.CharField(
-        max_length=15,
-        choices=OCCUPATIONS,
-        validators=[ValidateChoices(OCCUPATIONS)]
+    occupation = ArrayField(
+        models.CharField(
+            max_length=15,
+            choices=OCCUPATIONS,
+            validators=[ValidateChoices(OCCUPATIONS)]
+        ),
+        size=3,
     )
     coren = models.CharField(
         max_length=6,
