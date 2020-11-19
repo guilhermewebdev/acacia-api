@@ -192,3 +192,6 @@ class Rating(models.Model):
     grade = models.IntegerField(
         validators=[MaxValueValidator(5), MinValueValidator(1)]
     )
+
+    class Meta:
+        unique_together = ('client', 'professional')
