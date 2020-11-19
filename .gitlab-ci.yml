@@ -18,7 +18,7 @@ test:
 
 staging:
   stage: deploy
-  image: ubuntu
+  image: fedora
   variables:
     HEROKU_API_KEY: 278b3638-5715-4040-8f0d-126402c349c5
     DB: $DB
@@ -28,8 +28,7 @@ staging:
     DB_USER: $DB_USER
     SECRET_KEY: $SECRET_KEY
   before_script:
-    - apt-get update -y
-    - apt-get install -y ruby-dev git curl node npm
+    - dnf install -y ruby-devel git curl node npm
     - npm install -g heroku
     - gem install dpl
   script:
@@ -40,7 +39,7 @@ staging:
 
 production:
   stage: deploy
-  image: ubuntu
+  image: fedora
   variables:
     HEROKU_API_KEY: 278b3638-5715-4040-8f0d-126402c349c5
     DB: $DB
@@ -50,8 +49,7 @@ production:
     DB_USER: $DB_USER
     SECRET_KEY: $SECRET_KEY
   before_script:
-    - apt-get update -y
-    - apt-get install -y ruby-dev git curl node npm
+    - dnf install -y ruby-devel git curl node npm
     - npm install -g heroku
     - gem install dpl
   script:
