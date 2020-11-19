@@ -30,8 +30,8 @@ staging:
   before_script:
     - apt-get update -y
     - apt-get install curl -y
-    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
     - apt-get update -y
     - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git nodejs yarn npm
     - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
@@ -56,8 +56,8 @@ production:
   before_script:
     - apt-get update -y
     - apt-get install curl -y
-    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
     - apt-get update -y
     - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git nodejs yarn npm
     - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
