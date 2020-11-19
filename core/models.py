@@ -181,6 +181,9 @@ class Professional(models.Model):
         max_length=6,
         validators=[RegexValidator('^[0-9]{2}\.?[0-9]{3}$')],
     )
+    @property
+    def avg_rating(self):
+        return self.rates.all().aggregate(models.Avg('grade'))['grade__avg']
 
 class Rating(models.Model):
     client = models.ForeignKey(
