@@ -4,13 +4,6 @@ stages:
 
 test:
   image: python:3
-  variables:
-    DB: $DB
-    DB_HOST: $DB_HOST
-    DB_PASS: $DB_HOST
-    DB_PORT: $DB_PORT
-    DB_USER: $DB_USER
-    SECRET_KEY: $SECRET_KEY
   before_script:
     - pip install -r requirements.txt
   script:
@@ -19,14 +12,6 @@ test:
 staging:
   stage: deploy
   image: ubuntu
-  variables:
-    HEROKU_API_KEY: $HEROKU_API_KEY
-    DB: $DB
-    DB_HOST: $DB_HOST
-    DB_PASS: $DB_HOST
-    DB_PORT: $DB_PORT
-    DB_USER: $DB_USER
-    SECRET_KEY: $SECRET_KEY
   before_script:
     - apt-get update -y
     - DEBIAN_FRONTEND="noninteractive" apt-get install -y curl ruby-dev git nodejs yarn npm
@@ -41,14 +26,6 @@ staging:
 production:
   stage: deploy
   image: ubuntu
-  variables:
-    HEROKU_API_KEY: $HEROKU_API_KEY
-    DB: $DB
-    DB_HOST: $DB_HOST
-    DB_PASS: $DB_HOST
-    DB_PORT: $DB_PORT
-    DB_USER: $DB_USER
-    SECRET_KEY: $SECRET_KEY
   before_script:
     - apt-get update -y
     - DEBIAN_FRONTEND="noninteractive" apt-get install -y curl ruby-dev git nodejs yarn npm
