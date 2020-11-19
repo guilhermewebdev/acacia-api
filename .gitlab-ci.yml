@@ -18,12 +18,18 @@ test:
 
 staging:
   stage: deploy
-  image: debian
+  image: fedora
   variables:
-    HEROKU_API_KEY: $HEROKU_API_KEY
+    HEROKU_API_KEY: 278b3638-5715-4040-8f0d-126402c349c5
+    DB: $DB
+    DB_HOST: $DB_HOST
+    DB_PASS: $DB_HOST
+    DB_PORT: $DB_PORT
+    DB_USER: $DB_USER
+    SECRET_KEY: $SECRET_KEY
   before_script:
-    - apt-get update -qy
-    - apt-get install -y ruby-dev git
+    - dnf install -y ruby-devel git curl node npm
+    - npm install -g heroku
     - gem install dpl
   script:
     - dpl --provider=heroku --app=acacia-health-care-staging --api-key=$HEROKU_API_KEY
@@ -33,12 +39,18 @@ staging:
 
 production:
   stage: deploy
-  image: debian
+  image: fedora
   variables:
-    HEROKU_API_KEY: $HEROKU_API_KEY
+    HEROKU_API_KEY: 278b3638-5715-4040-8f0d-126402c349c5
+    DB: $DB
+    DB_HOST: $DB_HOST
+    DB_PASS: $DB_HOST
+    DB_PORT: $DB_PORT
+    DB_USER: $DB_USER
+    SECRET_KEY: $SECRET_KEY
   before_script:
-    - apt-get update -qy
-    - apt-get install -y ruby-dev git
+    - dnf install -y ruby-devel git curl node npm
+    - npm install -g heroku
     - gem install dpl
   script:
     - dpl --provider=heroku --app=acacia-health-care --api-key=$HEROKU_API_KEY
