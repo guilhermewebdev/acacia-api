@@ -53,7 +53,7 @@ class ValidateChoices(object):
     def __call__(self, value):
         if value.upper() not in map(lambda el: el[0], self.choices):
             raise ValidationError(
-                '%(value) is not a valid Brazil state',
+                '%(value) is not a valid option',
                 params={'value': value})
 
 def invalid_cpf(value):
