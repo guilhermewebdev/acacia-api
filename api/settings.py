@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'core',
     'axes',
     'services',
+    'chat',
 ]
 
 MIDDLEWARE = [
