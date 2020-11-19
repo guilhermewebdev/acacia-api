@@ -51,12 +51,10 @@ class ValidateChoices(object):
         self.choices = choices
 
     def __call__(self, value):
-        if value.upper() not in map(lambda el: el[0], choices):
+        if value.upper() not in map(lambda el: el[0], self.choices):
             raise ValidationError(
                 '%(value) is not a valid Brazil state',
-                params={'value': value}
-            )
-
+                params={'value': value})
 
 def invalid_cpf(value):
     raise ValidationError(
@@ -64,17 +62,14 @@ def invalid_cpf(value):
         params={'value', value}
     )
 
-
 def verify_sum(cpf, last_index): return reduce(
     lambda total, el, index: total + (el * (index + 2)),
     cpf.reverse()[0:last_index], 0)
-
 
 def verify_rest(sum: int, digit: int):
     rest = (sum * 10) % 11
     new_rest = 0 if ((rest == 10) or (rest == 11)) else rest
     return new_rest == digit
-
 
 def validate_cpf(value: str):
     unmasked_cpf = re.sub('[\s.-]*', '', value)
@@ -99,19 +94,23 @@ class User(AbstractUser):
         max_length=200,
     )
     born = models.DateField(
-        verbose_name='Birth date'
+        verbose_name='Birth date',
+        null=True,
     )
     avatar = models.ImageField(
         verbose_name='Avatar',
         upload_to='avatars',
         height_field=300,
         width_field=300,
+        null=True,
     )
     celphone = models.CharField(
         max_length=11,
+        null=True
     )
     telephone = models.CharField(
         max_length=10,
+        null=True,
     )
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['password']
@@ -137,10 +136,12 @@ class Professional(models.Model):
     )
     avg_price = models.FloatField(
         verbose_name='Average Price',
-        validators=[MinValueValidator(65)]
+        validators=[MinValueValidator(65)],
+        default=0,
     )
     availability = models.CharField(
         max_length=100,
+        null=True,
     )
     state = models.CharField(
         choices=STATES,
