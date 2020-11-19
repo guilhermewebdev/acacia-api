@@ -4,6 +4,7 @@ stages:
 
 test:
   image: python:3
+  stage: test
   before_script:
     - pip install -r requirements.txt
   script:
@@ -11,13 +12,11 @@ test:
 
 staging:
   stage: deploy
-  image: ubuntu
-  before_script:
-    - apt-get update -y
-    - DEBIAN_FRONTEND="noninteractive" apt-get install -y curl ruby-dev git nodejs yarn npm
-    - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
-    - gem install dpl
+  image: python:3
   script:
+    - apt-get update -qy
+    - apt-get install -y ruby-dev
+    - gem install dpl
     - dpl --provider=heroku --app=acacia-health-care-staging --api-key=$HEROKU_API_KEY
     - heroku run python manage.py migrate
   only:
@@ -25,13 +24,11 @@ staging:
 
 production:
   stage: deploy
-  image: ubuntu
-  before_script:
-    - apt-get update -y
-    - DEBIAN_FRONTEND="noninteractive" apt-get install -y curl ruby-dev git nodejs yarn npm
-    - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
-    - gem install dpl
+  image: python:3
   script:
+    - apt-get update -qy
+    - apt-get install -y ruby-dev
+    - gem install dpl
     - dpl --provider=heroku --app=acacia-health-care --api-key=$HEROKU_API_KEY
     - heroku run python manage.py migrate
   only:
