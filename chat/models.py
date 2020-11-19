@@ -3,20 +3,11 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-class Chat(models.Model):
-    participants = models.ManyToManyField(
-        User,
-        related_name='chats',
-    )
-
-    class Meta:
-        ordering = ['-messages__registration_date']
-        
 class Message(models.Model):
-    chat = models.ForeignKey(
-        Chat,
+    receiver = models.ForeignKey(
+        User,
         on_delete=models.CASCADE,
-        related_name='messages',
+        related_name='received_messages',
     )
     sender = models.ForeignKey(
         User,
@@ -27,6 +18,11 @@ class Message(models.Model):
         auto_now=True,
     )
     content = models.TextField()
+    viewed = models.BooleanField(
+        default=False,
+    )
 
+    def __str__(self) -> str:
+        return f'{self.sender} to {self.receiver}: {self.content[0:15]}'
     class Meta:
         ordering = ['-registration_date']
