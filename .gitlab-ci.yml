@@ -2,9 +2,25 @@ stages:
   - test
   - deploy
 
+services:
+  - postgres:12.2-alpine
+
+variables:
+  POSTGRES_DB: nice_marmot
+  POSTGRES_USER: runner
+  POSTGRES_PASSWORD: pass
+  POSTGRES_HOST_AUTH_METHOD: trust
+
 test:
   image: python:3
   stage: test
+  variables:
+    DB_HOST: postgres
+    DB_USER: runner
+    DB_PASS: pass
+    DB: nice_marmot
+    DB_PORT: '5432'
+    SECRET_KEY: h!kd%9yx+7y*it958@5=$=7h#_@reb=)3s)3t7%2qowa3=x&8o
   before_script:
     - pip install -r requirements.txt
   script:

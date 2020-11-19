@@ -165,18 +165,25 @@ class Professional(models.Model):
     rg = models.CharField(
         max_length=12,
     )
-    occupation = ArrayField(
+    occupation = models.CharField(
+        max_length=2,
+        choices=OCCUPATIONS,
+        validators=[ValidateChoices(OCCUPATIONS)]
+    )
+    skills = ArrayField(
         models.CharField(
             max_length=15,
-            choices=OCCUPATIONS,
-            validators=[ValidateChoices(OCCUPATIONS)]
         ),
         size=3,
+        null=True,
     )
     coren = models.CharField(
         max_length=6,
         validators=[RegexValidator('^[0-9]{2}\.?[0-9]{3}$')],
     )
+    @property
+    def avg_rating(self):
+        return self.rates.all().aggregate(models.Avg('grade'))['grade__avg']
 
 class Rating(models.Model):
     client = models.ForeignKey(
@@ -192,3 +199,6 @@ class Rating(models.Model):
     grade = models.IntegerField(
         validators=[MaxValueValidator(5), MinValueValidator(1)]
     )
+
+    class Meta:
+        unique_together = ('client', 'professional')
