@@ -165,13 +165,17 @@ class Professional(models.Model):
     rg = models.CharField(
         max_length=12,
     )
-    occupation = ArrayField(
+    occupation = models.CharField(
+        max_length=2,
+        choices=OCCUPATIONS,
+        validators=[ValidateChoices(OCCUPATIONS)]
+    )
+    skills = ArrayField(
         models.CharField(
             max_length=15,
-            choices=OCCUPATIONS,
-            validators=[ValidateChoices(OCCUPATIONS)]
         ),
         size=3,
+        null=True,
     )
     coren = models.CharField(
         max_length=6,
