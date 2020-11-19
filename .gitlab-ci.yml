@@ -15,10 +15,9 @@ staging:
   image: python:3
   script:
     - apt-get update -qy
-    - apt-get install -y ruby-dev
+    - apt-get install -y ruby-dev curl
     - gem install dpl
     - dpl --provider=heroku --app=acacia-health-care-staging --api-key=$HEROKU_API_KEY
-    - heroku run python manage.py migrate
   only:
     - master
 
@@ -27,9 +26,8 @@ production:
   image: python:3
   script:
     - apt-get update -qy
-    - apt-get install -y ruby-dev
+    - apt-get install -y ruby-dev curl
     - gem install dpl
     - dpl --provider=heroku --app=acacia-health-care --api-key=$HEROKU_API_KEY
-    - heroku run python manage.py migrate
   only:
     - master
