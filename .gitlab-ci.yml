@@ -29,11 +29,7 @@ staging:
     SECRET_KEY: $SECRET_KEY
   before_script:
     - apt-get update -y
-    - apt-get install curl -y
-    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
-    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-    - apt-get update -y
-    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git nodejs yarn npm
+    - DEBIAN_FRONTEND="noninteractive" apt-get install -y curl ruby-dev git nodejs yarn npm
     - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
     - gem install dpl
   script:
@@ -55,11 +51,7 @@ production:
     SECRET_KEY: $SECRET_KEY
   before_script:
     - apt-get update -y
-    - apt-get install curl -y
-    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
-    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-    - apt-get update -y
-    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git nodejs yarn npm
+    - DEBIAN_FRONTEND="noninteractive" apt-get install -y curl ruby-dev git nodejs yarn npm
     - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
     - gem install dpl
   script:
