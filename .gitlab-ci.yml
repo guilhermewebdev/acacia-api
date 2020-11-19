@@ -28,9 +28,11 @@ staging:
     DB_USER: $DB_USER
     SECRET_KEY: $SECRET_KEY
   before_script:
+    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
     - apt-get update -y
-    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git curl nodejs npm
-    - npm install -g heroku
+    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git curl nodejs yarn npm
+    - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
     - gem install dpl
   script:
     - dpl --provider=heroku --app=acacia-health-care-staging --api-key=$HEROKU_API_KEY
@@ -50,9 +52,11 @@ production:
     DB_USER: $DB_USER
     SECRET_KEY: $SECRET_KEY
   before_script:
+    - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+    - echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
     - apt-get update -y
-    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git curl nodejs npm
-    - npm install -g heroku
+    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git curl nodejs yarn npm
+    - curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
     - gem install dpl
   script:
     - dpl --provider=heroku --app=acacia-health-care --api-key=$HEROKU_API_KEY
