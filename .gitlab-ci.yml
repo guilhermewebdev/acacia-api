@@ -29,7 +29,7 @@ staging:
     SECRET_KEY: $SECRET_KEY
   before_script:
     - apt-get update -y
-    - apt-get install -y ruby-dev git curl nodejs npm
+    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git curl nodejs npm
     - npm install -g heroku
     - gem install dpl
   script:
@@ -51,7 +51,7 @@ production:
     SECRET_KEY: $SECRET_KEY
   before_script:
     - apt-get update -y
-    - apt-get install -y ruby-dev git curl nodejs npm
+    - DEBIAN_FRONTEND="noninteractive" apt-get install -y ruby-dev git curl nodejs npm
     - npm install -g heroku
     - gem install dpl
   script:
