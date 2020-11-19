@@ -1,0 +1,29 @@
+version: "3.7"
+
+services:
+    api:
+        build: .
+        restart: always
+        volumes:
+            - ./:/usr/share/app
+        ports:
+            - 80:80
+        command: python manage.py runserver 0.0.0.0:80
+        depends_on:
+            - db
+        environment:
+            DB_HOST: db
+            DB_USER: runner
+            PYTHONUNBUFFERED: 1
+            DB_PASS: pass
+            DB: nice_marmot
+            DB_PORT: '5432'
+            SECRET_KEY: fj2l4jl2j4l324jl34
+
+    db:
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: pass
+            POSTGRES_USER: runner
+            POSTGRES_DB: nice_marmot
