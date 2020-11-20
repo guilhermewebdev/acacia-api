@@ -2,6 +2,7 @@ from django.core.checks.messages import Error
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.db.utils import IntegrityError
+from django.test import client
 from .models import User, Professional, Rating
 class TestUser(TestCase):
 
@@ -159,3 +160,11 @@ class TestRating(TestCase):
             grade=4,
         )
         self.assertRaises(IntegrityError, rate.save)
+
+    def test_self_rating(self):
+        rate = Rating(
+            client=self.user,
+            professional=self.professional,
+            grade=5,
+        )
+        self.assertRaises((ValidationError, IntegrityError), rate.full_clean)

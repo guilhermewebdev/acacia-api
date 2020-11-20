@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MaxValueValidator, validate_email, RegexValidator, validate_slug, MinValueValidator
+from django.core.validators import MaxValueValidator, validate_email, RegexValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.contrib.postgres.fields import ArrayField
@@ -125,7 +125,7 @@ class User(AbstractUser):
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
-    @ property
+    @property
     def is_professional(self):
         return hasattr(self, 'professional')
 
@@ -184,14 +184,10 @@ class Availability(models.Model):
             raise ValidationError(
                 'The end date cannot be before the start date')
 
-    def validate(self):
+    def full_clean(self, *args, **kwargs) -> None:
         self.validate_end()
         self.validate_start()
-
-    def save(self, *args, **kwargs) -> None:
-        self.validate()
-        return super(Availability, self).save(*args, **kwargs)
-
+        return super(Availability, self).full_clean(*args, **kwargs)
 
 class Professional(models.Model):
     user = models.OneToOneField(
@@ -250,7 +246,7 @@ class Professional(models.Model):
         validators=[RegexValidator('^[0-9]{2}\.?[0-9]{3}$')],
     )
 
-    @ property
+    @property
     def avg_rating(self):
         return self.rates.all().aggregate(models.Avg('grade'))['grade__avg']
 
@@ -270,5 +266,14 @@ class Rating(models.Model):
         validators=[MaxValueValidator(5), MinValueValidator(1)]
     )
 
+    def validate_user(self):
+        if self.client == self.professional.user:
+                raise ValidationError(
+                    'It is not possible to rate yourself'
+                )
+
+    def full_clean(self, *args, **kwargs) -> None:
+        self.validate_user()
+        return super(Rating, self).full_clean(*args, **kwargs)
     class Meta:
         unique_together = ('client', 'professional')
