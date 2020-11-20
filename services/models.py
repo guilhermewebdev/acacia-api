@@ -90,6 +90,10 @@ class CounterProposal(models.Model):
         auto_now=True,
         editable=False,
     )
+    accepted = models.BooleanField(
+        null=True,
+        blank=True,
+    )
 
     def validate_value(self):
         if (self.target_value > (1.2 * self.proposal.value)):
