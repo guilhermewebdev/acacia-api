@@ -51,6 +51,12 @@ class Proposal(models.Model):
     value = models.FloatField(
         validators=[MinValueValidator(65)],
     )
+    description = models.TextField()
+    accepted = models.BooleanField(null=True, blank=True)
+    registration_date = models.DateTimeField(
+        auto_now=True,
+        editable=False,
+    )
 
     def validate_end_start(self):
         if self.start > self.end:
@@ -68,3 +74,19 @@ class Proposal(models.Model):
         self.validate_end_start()
         self.validate_self_proposal()
         return super(Proposal, self).full_clean(*args, **kwargs)
+
+class CounterProposal(models.Model):
+    proposal = models.OneToOneField(
+        Proposal,
+        related_name='counter_proposal',
+        on_delete=models.CASCADE,
+    )
+    target_value = models.FloatField(
+        validators=[MinValueValidator(65)],
+        default=models.F('proposal__value'),
+    )
+    description = models.TextField()
+    registration_date = models.DateTimeField(
+        auto_now=True,
+        editable=False,
+    )

@@ -48,6 +48,7 @@ class TestProposal(TestCase):
             start=TODAY + timedelta(days=1),
             end=TODAY + timedelta(days=3),
             value=300.00,
+            description='Lorem Ipsum dolores'
         )
         self.proposal.save()
 
@@ -65,5 +66,13 @@ class TestProposal(TestCase):
         self.proposal.client = self.professional.user
         self.proposal.professional = self.professional
         self.assertRaises(ValidationError, self.proposal.full_clean)
+
+    def test_accept_proposal(self):
+        self.proposal.accepted = True
+        self.proposal.full_clean()
+
+    def test_recuse_proposal(self):
+        self.proposal.accepted = False
+        self.proposal.full_clean()
 
     
