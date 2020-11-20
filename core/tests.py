@@ -1,6 +1,7 @@
+from django.core.checks.messages import Error
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from django.test import client
+from django.db.utils import IntegrityError
 from .models import User, Professional, Rating
 class TestUser(TestCase):
 
@@ -63,6 +64,53 @@ class TestUser(TestCase):
             coren='10.040'
         )
         self.assertRaises(ValidationError, professional.full_clean)
+
+    def test_invalid_coren(self):
+        user = User(
+            email='teste10@teste.com',
+            full_name='Chimbinha',
+            celphone='31988776655',
+            password='senha',
+        )
+        user.save()
+        professional = Professional(
+            user=user,
+            state='MG',
+            city='Belo Horizonte',
+            address='Centro',
+            zip_code='36200-000',
+            avg_price=99,
+            cpf="529.982.247-25",
+            rg='mg343402',
+            skills=['CI', 'AE', 'EM'],
+            occupation='CI',
+            coren='1040'
+        )
+        self.assertRaises(ValidationError, professional.full_clean)
+
+    def test_invalid_state(self):
+        user = User(
+            email='teste10@teste.com',
+            full_name='Chimbinha',
+            celphone='31988776655',
+            password='senha',
+        )
+        user.save()
+        professional = Professional(
+            user=user,
+            state='My',
+            city='Belo Horizonte',
+            address='Centro',
+            zip_code='36200-000',
+            avg_price=99,
+            cpf="529.982.247-25",
+            rg='mg343402',
+            skills=['CI', 'AE', 'EM'],
+            occupation='CI',
+            coren='10.400'
+        )
+        self.assertRaises(ValidationError, professional.full_clean)
+
 class TestRating(TestCase):
 
     def setUp(self):
@@ -102,3 +150,12 @@ class TestRating(TestCase):
         )
         rate.save()
         self.assertEqual(self.professional.avg_rating, 3)
+
+    def test_duplicate_rating(self):
+        self.test_rate()
+        rate = Rating(
+            client=self.client,
+            professional=self.professional,
+            grade=4,
+        )
+        self.assertRaises(IntegrityError, rate.save)
