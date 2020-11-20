@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from core.models import Professional
-from .models import CounterProposal, Proposal
+from .models import CounterProposal, Proposal, Job
 
 User = get_user_model()
 TODAY = timezone.now()
@@ -45,21 +45,21 @@ class TestProposal(TestCase):
             state='PR',
             professional_type='AE',
             service_type='AC',
-            start=TODAY + timedelta(days=1),
-            end=TODAY + timedelta(days=3),
+            start_datetime=TODAY + timedelta(days=1),
+            end_datetime=TODAY + timedelta(days=3),
             value=300.00,
             description='Lorem Ipsum dolores'
         )
         self.proposal.save()
 
     def test_past_date(self):
-        self.proposal.start = TODAY - timedelta(days=2)
-        self.proposal.end = TODAY - timedelta(days=1)
+        self.proposal.start_datetime = TODAY - timedelta(days=2)
+        self.proposal.end_datetime = TODAY - timedelta(days=1)
         self.assertRaises(ValidationError, self.proposal.full_clean)
 
     def test_end_before_start(self):
-        self.proposal.start = TODAY + timedelta(days=4)
-        self.proposal.end = TODAY + timedelta(days=2)
+        self.proposal.start_datetime = TODAY + timedelta(days=4)
+        self.proposal.end_datetime = TODAY + timedelta(days=2)
         self.assertRaises(ValidationError, self.proposal.full_clean)
 
     def test_self_proposal(self):
@@ -68,23 +68,18 @@ class TestProposal(TestCase):
         self.assertRaises(ValidationError, self.proposal.full_clean)
 
     def test_accept_proposal(self):
-        self.proposal.accepted = True
-        self.proposal.full_clean()
-
-    def test_recuse_proposal(self):
-        self.proposal.accepted = False
-        self.proposal.full_clean()
+        self.proposal.accept()
+        self.assertEqual(self.proposal.job.value, self.proposal.value)
 
     def test_counter_proposal(self):
         counter_proposal = CounterProposal(
             proposal=self.proposal,
-            target_value=320,
+            value=320,
             description='Teste',
         )
         counter_proposal.full_clean()
-        counter_proposal.target_value = 500
+        counter_proposal.value = 500
         self.assertRaises(ValidationError, counter_proposal.full_clean)
-        counter_proposal.target_value = 100
+        counter_proposal.value = 100
         self.assertRaises(ValidationError, counter_proposal.full_clean)
-        
-    
+

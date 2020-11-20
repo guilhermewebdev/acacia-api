@@ -13,7 +13,75 @@ def future_validator(date_time):
             'This date has passed'
         )
 
-class Proposal(models.Model):
+class Job(models.Model):
+    proposal = models.OneToOneField(
+        'Proposal',
+        on_delete=models.DO_NOTHING,
+        related_name='job',
+    )
+    value = models.FloatField(
+        validators=[MinValueValidator(65)],
+    )
+    registration_date = models.DateTimeField(
+        auto_now=True,
+        editable=False,
+    )
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    def __set_stats(self, attr):
+        if getattr(self, attr) != None:
+            stats = 'started' if attr == 'start_datetime' else 'finished'
+            raise ValidationError(f'This job has already been {stats}')
+        setattr(self, attr, timezone.now())
+        self.full_clean()
+        self.save(update_fields=[attr])
+        return self
+
+    def finish(self):
+        return self.__set_stats('end_datetime')
+
+    def start(self):
+        return self.__set_stats('start_datetime')
+
+class AcceptMixin(models.Model):
+    _accepted = models.BooleanField(
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    @property
+    def accepted(self):
+        return self._accepted
+
+    def __accept_or_reject(self, status):
+        if not self.id: raise ValidationError(f'This {self.__class__.__name__} cannot be approved or rejected as it has not been saved')
+        if self.accepted != None:
+            current_status = 'approved' if self.accepted else 'rejected'
+            raise ValidationError(
+                f'This {self.__class__.__name__} has already been {current_status}.',
+            )
+        self._accepted = status
+        self.save(update_fields=['_accepted'])
+        return self
+
+
+    def accept(self):
+        self.__accept_or_reject(True)
+        self._create_job()
+        return self
+
+    def reject(self):
+        return self.__accept_or_reject(False)
+
+    class Meta:
+        abstract = True
+
+class Proposal(AcceptMixin):
     client = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -42,24 +110,33 @@ class Proposal(models.Model):
         choices=SERVICES,
         validators=[ValidateChoices(SERVICES)],
     )
-    start = models.DateTimeField(
+    start_datetime = models.DateTimeField(
         validators=[future_validator],
     )
-    end = models.DateTimeField(
+    end_datetime = models.DateTimeField(
         validators=[future_validator]
     )
     value = models.FloatField(
         validators=[MinValueValidator(65)],
     )
     description = models.TextField()
-    accepted = models.BooleanField(null=True, blank=True)
     registration_date = models.DateTimeField(
         auto_now=True,
         editable=False,
     )
 
+    def _create_job(self):
+        job = Job(
+            proposal=self,
+            value=self.value,
+            start_datetime=self.start_datetime
+        )
+        job.full_clean()
+        job.save()
+        return job
+
     def validate_end_start(self):
-        if self.start > self.end:
+        if self.start_datetime > self.end_datetime:
             raise ValidationError(
                 'The start must be before the end'
             )
@@ -75,13 +152,13 @@ class Proposal(models.Model):
         self.validate_self_proposal()
         return super(Proposal, self).full_clean(*args, **kwargs)
 
-class CounterProposal(models.Model):
+class CounterProposal(AcceptMixin):
     proposal = models.OneToOneField(
         Proposal,
         related_name='counter_proposal',
         on_delete=models.CASCADE,
     )
-    target_value = models.FloatField(
+    value = models.FloatField(
         validators=[MinValueValidator(65)],
         default=models.F('proposal__value'),
     )
@@ -90,15 +167,27 @@ class CounterProposal(models.Model):
         auto_now=True,
         editable=False,
     )
-    accepted = models.BooleanField(
-        null=True,
-        blank=True,
-    )
+
+    def _create_job(self):
+        job = Job(
+            proposal=self.proposal,
+            value=self.value,
+            start_datetime=self.proposal.start_datetime
+        )
+        job.full_clean()
+        job.save()
+        return job
+    
+    def __accept_or_reject(self, status):
+        self.proposal.__accept_or_reject(status)
+        if self.proposal.is_valid():
+            self.proposal.save(update_fields=['_accepted'])
+        super(CounterProposal, self).__accept_or_reject(status)
 
     def validate_value(self):
-        if (self.target_value > (1.2 * self.proposal.value)):
+        if (self.value > (1.2 * self.proposal.value)):
             raise ValidationError('The counter offer must be a maximum of 20% more than the offer')
-        if (self.target_value < (0.8 * self.proposal.value)):
+        if (self.value < (0.8 * self.proposal.value)):
             raise ValidationError('The counter offer must be at least 20% more than the offer')
     
     def full_clean(self, *args, **kwargs):
