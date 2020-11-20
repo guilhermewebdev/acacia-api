@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from core.models import OCCUPATIONS, Professional, STATES, SERVICES, ValidateChoices
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -19,6 +19,16 @@ class Job(models.Model):
         on_delete=models.DO_NOTHING,
         related_name='job',
     )
+    professional = models.ForeignKey(
+        'core.Professional',
+        on_delete=models.CASCADE,
+        related_name='jobs'
+    )
+    client = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='hires',
+    )
     value = models.FloatField(
         validators=[MinValueValidator(65)],
     )
@@ -31,6 +41,23 @@ class Job(models.Model):
         null=True,
         blank=True,
     )
+
+    def validate_client(self):
+        if self.client != self.proposal.client:
+            raise ValidationError(
+                'The client needs to be the same as the proposal'
+            )
+    
+    def validate_professional(self):
+        if self.professional !=self.proposal.professional:
+            raise ValidationError(
+                'The professional needs to be the same as the proposal'
+            )
+
+    def full_clean(self, *args, **kwargs):
+        self.validate_client()
+        self.validate_professional()
+        return super(Job, self).full_clean(*args, **kwargs)
 
     def __set_stats(self, attr):
         if getattr(self, attr) != None:
@@ -129,7 +156,9 @@ class Proposal(AcceptMixin):
         job = Job(
             proposal=self,
             value=self.value,
-            start_datetime=self.start_datetime
+            start_datetime=self.start_datetime,
+            professional=self.professional,
+            client=self.client,
         )
         job.full_clean()
         job.save()
@@ -172,7 +201,9 @@ class CounterProposal(AcceptMixin):
         job = Job(
             proposal=self.proposal,
             value=self.value,
-            start_datetime=self.proposal.start_datetime
+            start_datetime=self.proposal.start_datetime,
+            professional=self.proposal.professional,
+            client=self.proposal.client,
         )
         job.full_clean()
         job.save()
@@ -193,3 +224,36 @@ class CounterProposal(AcceptMixin):
     def full_clean(self, *args, **kwargs):
         self.validate_value()
         return super(CounterProposal, self).full_clean(*args, **kwargs)
+
+
+
+class Rating(models.Model):
+    client = models.ForeignKey(
+        User,
+        on_delete = models.DO_NOTHING,
+        related_name='rates',
+    )
+    job = models.ForeignKey(
+        Job,
+        on_delete = models.CASCADE,
+        related_name='rates',
+    )
+    grade = models.IntegerField(
+        validators=[MaxValueValidator(5), MinValueValidator(1)]
+    )
+
+    def validate_user(self):
+        if self.client != self.job.client:
+            raise ValidationError(
+                'It is not possible to evaluate the hiring of another user'
+            )
+        if self.client == self.job.professional.user:
+                raise ValidationError(
+                    'It is not possible to rate yourself'
+                )
+
+    def full_clean(self, *args, **kwargs) -> None:
+        self.validate_user()
+        return super(Rating, self).full_clean(*args, **kwargs)
+    class Meta:
+        unique_together = ('client', 'job')

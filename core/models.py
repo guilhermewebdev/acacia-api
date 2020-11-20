@@ -257,32 +257,6 @@ class Professional(models.Model):
 
     @property
     def avg_rating(self):
-        return self.rates.all().aggregate(models.Avg('grade'))['grade__avg']
+        return self.jobs.filter(rates__isnull=False).all().aggregate(models.Avg('rates__grade'))['rates__grade__avg']
 
 
-class Rating(models.Model):
-    client = models.ForeignKey(
-        User,
-        on_delete = models.DO_NOTHING,
-        related_name='rates',
-    )
-    professional = models.ForeignKey(
-        Professional,
-        on_delete = models.CASCADE,
-        related_name='rates',
-    )
-    grade = models.IntegerField(
-        validators=[MaxValueValidator(5), MinValueValidator(1)]
-    )
-
-    def validate_user(self):
-        if self.client == self.professional.user:
-                raise ValidationError(
-                    'It is not possible to rate yourself'
-                )
-
-    def full_clean(self, *args, **kwargs) -> None:
-        self.validate_user()
-        return super(Rating, self).full_clean(*args, **kwargs)
-    class Meta:
-        unique_together = ('client', 'professional')
