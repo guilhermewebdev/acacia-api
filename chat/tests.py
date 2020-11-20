@@ -1,4 +1,3 @@
-from django.db import models
 from django.test import TestCase
 from .models import Message, User
 from core.models import Professional

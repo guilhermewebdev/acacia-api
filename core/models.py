@@ -123,6 +123,62 @@ class User(AbstractUser):
         swappable = 'AUTH_USER_MODEL'
 
 
+class Availability(models.Model):
+    RECURRENCES = (
+        ('D', 'Daily'),
+        ('W', 'Weekly'),
+        ('M', 'Monthly'),
+    )
+    WEEK_DAYS = (
+        ('MON', 'Monday'),
+        ('TUE', 'Tuesday'),
+        ('WED', 'Wednesday'),
+        ('THU', 'Thursday'),
+        ('FRI', 'Friday'),
+        ('SAT', 'Saturday'),
+        ('SUN', 'Sunday'),
+    )
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    recurrence = models.CharField(
+        choices=RECURRENCES,
+        max_length=1,
+        validators=[ValidateChoices(RECURRENCES)],
+        null=True,
+    )
+    weekly_recurrence = ArrayField(
+        models.CharField(
+            choices=WEEK_DAYS,
+            max_length=3,
+            validators=[ValidateChoices(WEEK_DAYS)]
+        ),
+        null=True,
+    )
+    registration_date = models.DateTimeField(
+        auto_now=True,
+    )
+    professional = models.ForeignKey(
+        'Professional',
+        on_delete=models.CASCADE,
+        related_name='availabilities',
+    )
+
+    def validate_start(self):
+        if self.start < self.registration_date:
+            raise ValidationError('The start date has passed')
+
+    def validate_end(self):
+        if self.end < self.start:
+            raise ValidationError('The end date cannot be before the start date')
+
+    def validate(self):
+        self.validate_end()
+        self.validate_start()
+
+    def save(self, *args, **kwargs) -> None:
+        self.validate()
+        return super(Availability, self).save(*args, **kwargs)
+
 class Professional(models.Model):
     user = models.OneToOneField(
         User,
@@ -138,10 +194,6 @@ class Professional(models.Model):
         verbose_name='Average Price',
         validators=[MinValueValidator(65)],
         default=0,
-    )
-    availability = models.CharField(
-        max_length=100,
-        null=True,
     )
     state = models.CharField(
         choices=STATES,
