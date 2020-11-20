@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.test import client
 from .models import User, Professional, Rating
@@ -10,12 +11,40 @@ class TestUser(TestCase):
             celphone='32999198822',
             password='tetris2',
         )
+        user.full_clean()
         user.save()
     
     def test_professional_creation(self):
         user = User(
             email='teste1@teste.com',
             full_name='Linuz Torvalds',
+            celphone='31988776655',
+            password='senha',
+        )
+        user.full_clean()
+        user.save()
+        professional = Professional(
+            user=user,
+            state='MG',
+            city='Belo Horizonte',
+            address='Centro',
+            zip_code='36200-000',
+            cpf="529.982.247-25",
+            rg='mg3434032',
+            skills=['CI', 'AE', 'EM'],
+            occupation='CI',
+            avg_price=80,
+            coren='10.000'
+        )
+        professional.full_clean()
+        professional.save()
+        assert user.professional == professional
+        assert user.is_professional
+
+    def test_invalid_cpf(self):
+        user = User(
+            email='teste10@teste.com',
+            full_name='Chimbinha',
             celphone='31988776655',
             password='senha',
         )
@@ -26,16 +55,14 @@ class TestUser(TestCase):
             city='Belo Horizonte',
             address='Centro',
             zip_code='36200-000',
-            cpf="601.554.960-26",
-            rg='mg3434032',
+            avg_price=99,
+            cpf="601.554.963-56",
+            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
-            coren='10.000'
+            coren='10.040'
         )
-        professional.save()
-        assert user.professional == professional
-        assert user.is_professional
-
+        self.assertRaises(ValidationError, professional.full_clean)
 class TestRating(TestCase):
 
     def setUp(self):
