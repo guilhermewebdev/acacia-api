@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MaxValueValidator, validate_email, RegexValidator, validate_slug, MinValueValidator
+from django.core.validators import MaxValueValidator, validate_email, RegexValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.contrib.postgres.fields import ArrayField
@@ -45,16 +45,24 @@ OCCUPATIONS = (
 )
 
 
+SERVICES = (
+    ('AC', 'Hospital Escort'),
+    ('AD', 'Home Escort'),
+    ('CV', 'Dressings / Vaccines'),
+    ('HC', 'Home Care'),
+)
+
 @deconstructible
 class ValidateChoices(object):
     def __init__(self, choices):
         self.choices = choices
 
     def __call__(self, value):
-        if value.upper() not in map(lambda el: el[0], self.choices):
+        if value.upper() not in map(lambda el: el[0].upper(), self.choices):
             raise ValidationError(
                 '%(value) is not a valid option',
                 params={'value': value})
+
 
 def invalid_cpf(value):
     raise ValidationError(
@@ -62,24 +70,29 @@ def invalid_cpf(value):
         params={'value', value}
     )
 
-def verify_sum(cpf, last_index): return reduce(
-    lambda total, el, index: total + (el * (index + 2)),
-    cpf.reverse()[0:last_index], 0)
+
+def verify_sum(cpf: list[int], last_index: int):
+    cut_cpf = cpf[0:last_index]
+    cut_cpf.reverse()
+    multipliers = list(range(2, last_index + 2))
+    sum_all = lambda total, el: total + (el[0] * el[1])
+    grouped_factors = list(zip(cut_cpf, multipliers))
+    return reduce(sum_all, grouped_factors, 0)
+
 
 def verify_rest(sum: int, digit: int):
     rest = (sum * 10) % 11
     new_rest = 0 if ((rest == 10) or (rest == 11)) else rest
     return new_rest == digit
 
+
 def validate_cpf(value: str):
-    unmasked_cpf = re.sub('[\s.-]*', '', value)
-    array_cpf = map(lambda el: int(el), value.split(''))
-    RegexValidator('(\d)\1{10}')(unmasked_cpf)
-    if (not unmasked_cpf or unmasked_cpf.length != 11):
-        invalid_cpf(value)
-    first_sum = verify_sum(array_cpf, 9)
-    second_sum = verify_sum(array_cpf, 10)
-    if not verify_rest(first_sum, array_cpf[9]) and verify_rest(second_sum, array_cpf[10]):
+    unmasked_cpf = re.sub('[^0-9]', '', value)
+    RegexValidator('^[0-9]{11}$')(unmasked_cpf)
+    list_cpf = list(map(lambda el: int(el), unmasked_cpf))
+    first_sum = verify_sum(list_cpf, 9)
+    second_sum = verify_sum(list_cpf, 10)
+    if not (verify_rest(first_sum, list_cpf[9]) and verify_rest(second_sum, list_cpf[10])):
         invalid_cpf(value)
 
 
@@ -96,6 +109,7 @@ class User(AbstractUser):
     born = models.DateField(
         verbose_name='Birth date',
         null=True,
+        blank=True,
     )
     avatar = models.ImageField(
         verbose_name='Avatar',
@@ -103,24 +117,27 @@ class User(AbstractUser):
         height_field=300,
         width_field=300,
         null=True,
+        blank=True,
     )
     celphone = models.CharField(
         max_length=11,
-        null=True
+        null=True,
+        blank=True,
     )
     telephone = models.CharField(
         max_length=10,
         null=True,
+        blank=True,
     )
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['password']
+    USERNAME_FIELD='email'
+    REQUIRED_FIELDS=['password']
 
     @property
     def is_professional(self):
         return hasattr(self, 'professional')
 
     class Meta(AbstractUser.Meta):
-        swappable = 'AUTH_USER_MODEL'
+        swappable='AUTH_USER_MODEL'
 
 
 class Availability(models.Model):
@@ -145,21 +162,23 @@ class Availability(models.Model):
         max_length=1,
         validators=[ValidateChoices(RECURRENCES)],
         null=True,
+        blank=True,
     )
-    weekly_recurrence = ArrayField(
+    weekly_recurrence=ArrayField(
         models.CharField(
             choices=WEEK_DAYS,
             max_length=3,
             validators=[ValidateChoices(WEEK_DAYS)]
         ),
         null=True,
+        blank=True,
     )
     registration_date = models.DateTimeField(
         auto_now=True,
     )
     professional = models.ForeignKey(
         'Professional',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
         related_name='availabilities',
     )
 
@@ -169,26 +188,25 @@ class Availability(models.Model):
 
     def validate_end(self):
         if self.end < self.start:
-            raise ValidationError('The end date cannot be before the start date')
+            raise ValidationError(
+                'The end date cannot be before the start date')
 
-    def validate(self):
+    def full_clean(self, *args, **kwargs) -> None:
         self.validate_end()
         self.validate_start()
-
-    def save(self, *args, **kwargs) -> None:
-        self.validate()
-        return super(Availability, self).save(*args, **kwargs)
+        return super(Availability, self).full_clean(*args, **kwargs)
 
 class Professional(models.Model):
     user = models.OneToOneField(
         User,
         related_name='professional',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     about = models.TextField(
         verbose_name='About text',
         null=True,
         max_length=1000,
+        blank=True,
     )
     avg_price = models.FloatField(
         verbose_name='Average Price',
@@ -222,35 +240,49 @@ class Professional(models.Model):
         choices=OCCUPATIONS,
         validators=[ValidateChoices(OCCUPATIONS)]
     )
-    skills = ArrayField(
+    skills=ArrayField(
         models.CharField(
             max_length=15,
+            choices=SERVICES,
+            validators=[ValidateChoices(SERVICES)]
         ),
         size=3,
         null=True,
+        blank=True,
     )
     coren = models.CharField(
         max_length=6,
         validators=[RegexValidator('^[0-9]{2}\.?[0-9]{3}$')],
     )
+
     @property
     def avg_rating(self):
         return self.rates.all().aggregate(models.Avg('grade'))['grade__avg']
 
+
 class Rating(models.Model):
     client = models.ForeignKey(
         User,
-        on_delete=models.DO_NOTHING,
+        on_delete = models.DO_NOTHING,
         related_name='rates',
     )
     professional = models.ForeignKey(
         Professional,
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
         related_name='rates',
     )
     grade = models.IntegerField(
         validators=[MaxValueValidator(5), MinValueValidator(1)]
     )
 
+    def validate_user(self):
+        if self.client == self.professional.user:
+                raise ValidationError(
+                    'It is not possible to rate yourself'
+                )
+
+    def full_clean(self, *args, **kwargs) -> None:
+        self.validate_user()
+        return super(Rating, self).full_clean(*args, **kwargs)
     class Meta:
         unique_together = ('client', 'professional')
