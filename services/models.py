@@ -90,3 +90,13 @@ class CounterProposal(models.Model):
         auto_now=True,
         editable=False,
     )
+
+    def validate_value(self):
+        if (self.target_value > (1.2 * self.proposal.value)):
+            raise ValidationError('The counter offer must be a maximum of 20% more than the offer')
+        if (self.target_value < (0.8 * self.proposal.value)):
+            raise ValidationError('The counter offer must be at least 20% more than the offer')
+    
+    def full_clean(self, *args, **kwargs):
+        self.validate_value()
+        return super(CounterProposal, self).full_clean(*args, **kwargs)
