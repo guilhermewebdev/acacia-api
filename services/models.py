@@ -64,7 +64,7 @@ class Proposal(models.Model):
                 "You cannot make a proposal for yourself"
             )
 
-    def full_clean(self, *args, **kwargs) -> None:
+    def full_clean(self, *args, **kwargs):
         self.validate_end_start()
         self.validate_self_proposal()
         return super(Proposal, self).full_clean(*args, **kwargs)

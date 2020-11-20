@@ -11,7 +11,7 @@ TODAY = timezone.now()
 
 class TestProposal(TestCase):
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.client = User(
             email='tete@tete.com',
             password='senha',

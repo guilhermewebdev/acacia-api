@@ -22,7 +22,7 @@ class Message(models.Model):
         default=False,
     )
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f'{self.sender} to {self.receiver}: {self.content[0:15]}'
     class Meta:
         ordering = ['-registration_date']

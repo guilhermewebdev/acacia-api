@@ -4,7 +4,7 @@ from core.models import Professional
 
 class TestChat(TestCase):
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.client = User(
             email='teste4@teste.com',
             full_name='Tom Cruise',

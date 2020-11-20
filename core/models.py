@@ -71,7 +71,7 @@ def invalid_cpf(value):
     )
 
 
-def verify_sum(cpf: list[int], last_index: int):
+def verify_sum(cpf, last_index):
     cut_cpf = cpf[0:last_index]
     cut_cpf.reverse()
     multipliers = list(range(2, last_index + 2))
@@ -80,13 +80,13 @@ def verify_sum(cpf: list[int], last_index: int):
     return reduce(sum_all, grouped_factors, 0)
 
 
-def verify_rest(sum: int, digit: int):
+def verify_rest(sum, digit):
     rest = (sum * 10) % 11
     new_rest = 0 if ((rest == 10) or (rest == 11)) else rest
     return new_rest == digit
 
 
-def validate_cpf(value: str):
+def validate_cpf(value):
     unmasked_cpf = re.sub('[^0-9]', '', value)
     RegexValidator('^[0-9]{11}$')(unmasked_cpf)
     list_cpf = list(map(lambda el: int(el), unmasked_cpf))
