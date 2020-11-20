@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from core.models import Professional
-from .models import Proposal
+from .models import CounterProposal, Proposal
 
 User = get_user_model()
 TODAY = timezone.now()
@@ -75,4 +75,16 @@ class TestProposal(TestCase):
         self.proposal.accepted = False
         self.proposal.full_clean()
 
+    def test_counter_proposal(self):
+        counter_proposal = CounterProposal(
+            proposal=self.proposal,
+            target_value=320,
+            description='Teste',
+        )
+        counter_proposal.full_clean()
+        counter_proposal.target_value = 500
+        self.assertRaises(ValidationError, counter_proposal.full_clean)
+        counter_proposal.target_value = 100
+        self.assertRaises(ValidationError, counter_proposal.full_clean)
+        
     
