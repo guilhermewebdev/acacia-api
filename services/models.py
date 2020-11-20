@@ -13,6 +13,36 @@ def future_validator(date_time):
             'This date has passed'
         )
 
+class Rating(models.Model):
+    client = models.ForeignKey(
+        User,
+        on_delete = models.DO_NOTHING,
+        related_name='rates',
+    )
+    job = models.ForeignKey(
+        'Job',
+        on_delete = models.CASCADE,
+        related_name='rate',
+    )
+    grade = models.IntegerField(
+        validators=[MaxValueValidator(5), MinValueValidator(1)]
+    )
+
+    def validate_user(self):
+        if self.client != self.job.client:
+            raise ValidationError(
+                'It is not possible to evaluate the hiring of another user'
+            )
+        if self.client == self.job.professional.user:
+                raise ValidationError(
+                    'It is not possible to rate yourself'
+                )
+
+    def full_clean(self, *args, **kwargs) -> None:
+        self.validate_user()
+        return super(Rating, self).full_clean(*args, **kwargs)
+    class Meta:
+        unique_together = ('client', 'job')
 class Job(models.Model):
     proposal = models.OneToOneField(
         'Proposal',
@@ -41,6 +71,24 @@ class Job(models.Model):
         null=True,
         blank=True,
     )
+
+    def rate(self, user, grade):
+        if not self.end_datetime:
+            raise ValidationError(
+                'This work has not yet finished',
+            )
+        if user != self.client:
+            raise ValidationError(
+                'Only the contractor can evaluate the service'
+            )
+        rate = Rating(
+            client=self.client,
+            job=self,
+            grade=grade,
+        )
+        rate.full_clean()
+        rate.save()
+        return rate
 
     def validate_client(self):
         if self.client != self.proposal.client:
@@ -224,36 +272,3 @@ class CounterProposal(AcceptMixin):
     def full_clean(self, *args, **kwargs):
         self.validate_value()
         return super(CounterProposal, self).full_clean(*args, **kwargs)
-
-
-
-class Rating(models.Model):
-    client = models.ForeignKey(
-        User,
-        on_delete = models.DO_NOTHING,
-        related_name='rates',
-    )
-    job = models.ForeignKey(
-        Job,
-        on_delete = models.CASCADE,
-        related_name='rates',
-    )
-    grade = models.IntegerField(
-        validators=[MaxValueValidator(5), MinValueValidator(1)]
-    )
-
-    def validate_user(self):
-        if self.client != self.job.client:
-            raise ValidationError(
-                'It is not possible to evaluate the hiring of another user'
-            )
-        if self.client == self.job.professional.user:
-                raise ValidationError(
-                    'It is not possible to rate yourself'
-                )
-
-    def full_clean(self, *args, **kwargs) -> None:
-        self.validate_user()
-        return super(Rating, self).full_clean(*args, **kwargs)
-    class Meta:
-        unique_together = ('client', 'job')

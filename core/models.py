@@ -257,6 +257,6 @@ class Professional(models.Model):
 
     @property
     def avg_rating(self):
-        return self.jobs.filter(rates__isnull=False).all().aggregate(models.Avg('rates__grade'))['rates__grade__avg']
+        return self.jobs.filter(rate__isnull=False).all().aggregate(models.Avg('rate__grade'))['rate__grade__avg']
 
 
