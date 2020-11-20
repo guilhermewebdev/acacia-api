@@ -45,13 +45,20 @@ OCCUPATIONS = (
 )
 
 
+SERVICES = (
+    ('AC', 'Hospital Escort'),
+    ('AD', 'Home Escort'),
+    ('CV', 'Dressings / Vaccines'),
+    ('HC', 'Home Care'),
+)
+
 @deconstructible
 class ValidateChoices(object):
     def __init__(self, choices):
         self.choices = choices
 
     def __call__(self, value):
-        if value.upper() not in map(lambda el: el[0], self.choices):
+        if value.upper() not in map(lambda el: el[0].upper(), self.choices):
             raise ValidationError(
                 '%(value) is not a valid option',
                 params={'value': value})
@@ -236,6 +243,8 @@ class Professional(models.Model):
     skills=ArrayField(
         models.CharField(
             max_length=15,
+            choices=SERVICES,
+            validators=[ValidateChoices(SERVICES)]
         ),
         size=3,
         null=True,

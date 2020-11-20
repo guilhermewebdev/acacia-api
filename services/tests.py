@@ -1,12 +1,14 @@
-from datetime import date
-import datetime
+from django.utils import timezone
+from django.utils.timezone import timedelta
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from core.models import Professional
+from .models import Proposal
 
 User = get_user_model()
-TODAY = date.today()
+TODAY = timezone.now()
+
 class TestProposal(TestCase):
 
     def setUp(self) -> None:
@@ -43,20 +45,20 @@ class TestProposal(TestCase):
             state='PR',
             professional_type='AE',
             service_type='AC',
-            start=TODAY + datetime.timedelta(days=1),
-            end=TODAY + datetime.timedelta(days=3),
+            start=TODAY + timedelta(days=1),
+            end=TODAY + timedelta(days=3),
             value=300.00,
         )
         self.proposal.save()
 
     def test_past_date(self):
-        self.proposal.start = TODAY - datetime.timedelta(days=2)
-        self.proposal.end = TODAY - date.timedelta(days=1)
+        self.proposal.start = TODAY - timedelta(days=2)
+        self.proposal.end = TODAY - timedelta(days=1)
         self.assertRaises(ValidationError, self.proposal.full_clean)
 
     def test_end_before_start(self):
-        self.proposal.start = TODAY + datetime.timedelta(days=4)
-        self.proposal.end = TODAY + datetime.timedelta(days=2)
+        self.proposal.start = TODAY + timedelta(days=4)
+        self.proposal.end = TODAY + timedelta(days=2)
         self.assertRaises(ValidationError, self.proposal.full_clean)
 
     def test_self_proposal(self):

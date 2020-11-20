@@ -33,7 +33,7 @@ class TestUser(TestCase):
             zip_code='36200-000',
             cpf="529.982.247-25",
             rg='mg3434032',
-            skills=['CI', 'AE', 'EM'],
+            skills=['AC', 'AD', 'HC'],
             occupation='CI',
             avg_price=80,
             coren='10.000'
