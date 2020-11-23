@@ -265,8 +265,8 @@ class Professional(models.Model):
 
     @property
     def cash(self):
-        cash_in = self.payments.all().aggregate(models.Sum('value'))['value_sum']
-        cash_out = self.cash_outs.all().aggregate(models.Sum('value'))['value_sum']
+        cash_in = int(self.receipts.all().aggregate(models.Sum('value'))['value__sum'] or 0)
+        cash_out = int(self.cash_outs.all().aggregate(models.Sum('value'))['value__sum'] or 0)
         return cash_in - cash_out
 
     @staticmethod

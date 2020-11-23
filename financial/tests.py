@@ -68,4 +68,7 @@ class TestPayment(TestCase):
     def test_wrong_payment_value(self):
         self.payment.value = 100
         self.assertRaises(ValidationError, self.payment.full_clean)
+
+    def test_cash(self):
+        self.assertEqual(self.professional.cash, 300)
         
