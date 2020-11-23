@@ -55,7 +55,7 @@ class TestChat(TestCase):
             client=self.client,
             professional=self.professional,
             value=300,
-            start_datetime=TODAY + timedelta(1)
+            start_datetime=TODAY + timedelta(days=1)
         )
         self.job.save()
 

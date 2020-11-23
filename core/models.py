@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.contrib.postgres.fields import ArrayField
 from functools import reduce
+from pagarme import customer
 import re
 
 STATES = (
@@ -129,6 +130,9 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
+    saved_in_pagarme = models.BooleanField(
+        default=False
+    )
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
@@ -136,9 +140,38 @@ class User(AbstractUser):
     def is_professional(self):
         return hasattr(self, 'professional')
     
+    @property
+    def customer(self):
+        if self.saved_in_pagarme:
+            return customer.find_by({
+                'email': self.email
+            })
+        return None
+
     @staticmethod
     def get_deleted_user(cls):
         return cls.object.get(email='deleted@user.com')
+
+    def create_customer(self, cpf, zip_code, neighborhood, street, street_number, phone, ddd):
+        if not self.saved_in_pagarme:
+            validate_cpf(cpf)
+            unmasked_cpf = re.sub('[^0-9]', '', cpf)
+            return customer.create( {
+                'email': self.email,
+                'name': self.full_name,
+                'document_number': unmasked_cpf,
+                'address': {
+                    'zipcode': zip_code,
+                    'neighborhood': neighborhood,
+                    'street': street,
+                    'street_number': street_number,
+                },
+                'phone': {
+                    'number': phone,
+                    'ddd': ddd
+                }
+            })
+        return self.customer
 
     class Meta(AbstractUser.Meta):
         swappable='AUTH_USER_MODEL'

@@ -3,3 +3,4 @@ psycopg2
 uvicorn
 Pillow
 django-axes
+pagarme-python

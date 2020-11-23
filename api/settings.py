@@ -29,6 +29,9 @@ ALLOWED_HOSTS = ['*']
 
 AXES_ENABLED = not DEBUG
 
+PAGARME_API_KEY = os.environ.get('PAGARME_API_KEY')
+PAGARME_CRYPTO = os.environ.get('PAGARME_CRYPTO')
+
 # Application definition
 
 INSTALLED_APPS = [
