@@ -8,19 +8,19 @@ User = get_user_model()
 class Payment(models.Model):
     client = models.ForeignKey(
         User, 
-        on_delete=models.CASCADE,
+        on_delete=models.SET(User.get_deleted_user),
         related_name='payments',
     )
     professional = models.ForeignKey(
         Professional,
-        on_delete=models.SET_NULL,
+        on_delete=models.SET(Professional.get_deleted_professional),
         related_name='receipts',
         null=True,
     )
     value = models.FloatField()
     job = models.OneToOneField(
         Job,
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE,
     )
     registration_date = models.DateTimeField(
         auto_now=True,

@@ -264,5 +264,5 @@ class Professional(models.Model):
         return self.jobs.filter(rate__isnull=False).all().aggregate(models.Avg('rate__grade'))['rate__grade__avg']
 
     @staticmethod
-    def get_deleted_user(cls):
+    def get_deleted_professional(cls):
         return cls.object.get(user__email='deleted@user.com')

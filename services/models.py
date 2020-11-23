@@ -16,7 +16,7 @@ def future_validator(date_time):
 class Rating(models.Model):
     client = models.ForeignKey(
         User,
-        on_delete = models.DO_NOTHING,
+        on_delete = models.SET(User.get_deleted_user),
         related_name='rates',
     )
     job = models.ForeignKey(
@@ -46,17 +46,17 @@ class Rating(models.Model):
 class Job(models.Model):
     proposal = models.OneToOneField(
         'Proposal',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.PROTECT,
         related_name='job',
     )
     professional = models.ForeignKey(
         'core.Professional',
-        on_delete=models.CASCADE,
+        on_delete=models.SET(Professional.get_deleted_professional),
         related_name='jobs'
     )
     client = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET(User.get_deleted_user),
         related_name='hires',
     )
     value = models.FloatField(
