@@ -263,6 +263,12 @@ class Professional(models.Model):
     def avg_rating(self):
         return self.jobs.filter(rate__isnull=False).all().aggregate(models.Avg('rate__grade'))['rate__grade__avg']
 
+    @property
+    def cash(self):
+        cash_in = self.payments.all().aggregate(models.Sum('value'))['value_sum']
+        cash_out = self.cash_outs.all().aggregate(models.Sum('value'))['value_sum']
+        return cash_in - cash_out
+
     @staticmethod
     def get_deleted_professional(cls):
         return cls.object.get(user__email='deleted@user.com')
