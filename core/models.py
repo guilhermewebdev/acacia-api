@@ -156,7 +156,7 @@ class User(AbstractUser):
         if not self.saved_in_pagarme:
             validate_cpf(cpf)
             unmasked_cpf = re.sub('[^0-9]', '', cpf)
-            return customer.create( {
+            __customer = customer.create( {
                 'email': self.email,
                 'name': self.full_name,
                 'document_number': unmasked_cpf,
@@ -171,6 +171,10 @@ class User(AbstractUser):
                     'ddd': ddd
                 }
             })
+            if __customer['id'] is not None:
+                self.saved_in_pagarme = True
+                self.save()
+            return __customer
         return self.customer
 
     class Meta(AbstractUser.Meta):
