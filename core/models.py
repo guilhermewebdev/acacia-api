@@ -135,6 +135,10 @@ class User(AbstractUser):
     @property
     def is_professional(self):
         return hasattr(self, 'professional')
+    
+    @staticmethod
+    def get_deleted_user(cls):
+        return cls.object.get(email='deleted@user.com')
 
     class Meta(AbstractUser.Meta):
         swappable='AUTH_USER_MODEL'
@@ -259,4 +263,6 @@ class Professional(models.Model):
     def avg_rating(self):
         return self.jobs.filter(rate__isnull=False).all().aggregate(models.Avg('rate__grade'))['rate__grade__avg']
 
-
+    @staticmethod
+    def get_deleted_user(cls):
+        return cls.object.get(user__email='deleted@user.com')
