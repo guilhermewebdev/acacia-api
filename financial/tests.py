@@ -9,6 +9,7 @@ from django.utils import timezone
 User = get_user_model()
 TODAY = timezone.now()
 timedelta = timezone.timedelta
+
 class TestPayment(TestCase):
 
     def setUp(self):
