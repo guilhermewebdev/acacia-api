@@ -21,6 +21,7 @@ class Payment(models.Model):
     job = models.OneToOneField(
         Job,
         on_delete=models.CASCADE,
+        related_name='job',
     )
     registration_date = models.DateTimeField(
         auto_now=True,
