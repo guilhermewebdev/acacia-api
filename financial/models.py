@@ -1,5 +1,4 @@
 from django.core.exceptions import ValidationError
-from pagarme import recipient
 from services.models import Job
 from core.models import Professional
 from django.db import models
@@ -140,7 +139,7 @@ class CashOut(models.Model):
     def withdraw(self):
         if not self.withdraw and not self.pagerme_id:
             self.__transfer = transfer.create(dict(
-                amount=int(self.value * 85),
+                amount=int(self.value * (100 - settings.CASH_OUT_COMMISSION)),
                 recipient_id=self.professional.recipient.get('id', None)
             ))
             if 'id' in self.__transfer:

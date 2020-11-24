@@ -268,8 +268,8 @@ class Availability(models.Model):
         ('SAT', 'Saturday'),
         ('SUN', 'Sunday'),
     )
-    start = models.DateTimeField()
-    end = models.DateTimeField()
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
     recurrence = models.CharField(
         choices=RECURRENCES,
         max_length=1,
@@ -296,11 +296,11 @@ class Availability(models.Model):
     )
 
     def validate_start(self):
-        if self.start < self.registration_date:
+        if self.start_datetime < self.registration_date:
             raise ValidationError('The start date has passed')
 
     def validate_end(self):
-        if self.end < self.start:
+        if self.end_datetime < self.start_datetime:
             raise ValidationError(
                 'The end date cannot be before the start date')
 
