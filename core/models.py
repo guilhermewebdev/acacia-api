@@ -9,7 +9,7 @@ from functools import reduce
 from pagarme import customer, recipient
 from django.template.loader import render_to_string
 import re
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator as dtg
 from django.conf import settings
 
 class TokenGenerator(PasswordResetTokenGenerator):
@@ -182,6 +182,25 @@ class User(AbstractUser):
     @staticmethod
     def get_deleted_user(cls):
         return cls.object.get(email='deleted@user.com')
+
+    def recover_password(self):
+        self.email_user(
+            'Recuperação de Senha',
+            message=render_to_string(
+                'recover_password_email.html',
+                {
+                    'user': self,
+                    'token': dtg.make_token(self),
+                    'link': settings.CHANGE_PASSWORD_LINK,
+                }
+            )
+        )
+
+    def set_recovered_password(self, token, password):
+        if dtg.check_token(self, token):
+            self.set_password(password)
+            return True
+        return False
 
     def confirm_email(self):
         if not self.is_active:
