@@ -1,5 +1,4 @@
 from django.core.exceptions import ValidationError
-from pagarme import customer
 from services.models import Job
 from core.models import Professional
 from django.db import models
@@ -83,7 +82,7 @@ class Payment(models.Model):
                     payment=self.uuid,
                 )
             ))
-            if self.__transaction['status'] == 'paid':
+            if self.__transaction.get('status', None) == 'paid':
                 self.paid = True
                 self.save(update_fields=['paid'])
         return self.paid, self.transaction
