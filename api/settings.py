@@ -32,6 +32,9 @@ AXES_ENABLED = not DEBUG
 PAGARME_API_KEY = os.environ.get('PAGARME_API_KEY')
 PAGARME_CRYPTO = os.environ.get('PAGARME_CRYPTO')
 
+CONFIRMATION_LINK = os.environ.get('CONFIRMATION_LINK')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
+
 # Application definition
 
 INSTALLED_APPS = [

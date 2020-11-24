@@ -191,8 +191,7 @@ class User(AbstractUser):
         if account_activation_token.check_token(self, token):
             self.is_active = True
             self.save(update_fields=['is_active'])
-            return True
-        return False
+        return self.is_active
 
     def create_customer(self, cpf, zip_code, neighborhood, street, street_number, phone, ddd):
         if not self.saved_in_pagarme:
