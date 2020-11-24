@@ -42,7 +42,7 @@ class Message(models.Model):
         self.validate_user(self.sender)
 
     def validate_payment(self):
-        if not self.job.payment.is_valid():
+        if not self.job.payment.is_valid() and self.job.payment.paid:
             raise ValidationError(
                 'Payment is required to send the message'
             )

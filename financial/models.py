@@ -39,10 +39,21 @@ class Payment(models.Model):
     paid = models.BooleanField(
         default=False,
     )
+    __transaction = None
+
+    @property
+    def transaction(self):
+        if not self.__transaction:
+            self.__transaction = transaction.find_by({
+                'metadata': {
+                    'payment': self.uuid,
+                }
+            })
+        return self.__transaction
 
     def pay(self, card_hash, street, street_number, zipcode, state, city, neighborhood, country='BR', complementary='_'):
         if not self.paid:
-            trx = transaction.create(dict(
+            self.__transaction = transaction.create(dict(
                 amount=int(self.value * 100),
                 card_hash=card_hash,
                 customer=self.client.customer,
@@ -58,22 +69,24 @@ class Payment(models.Model):
                     neighborhood=neighborhood,
                     country=country,
                     complementary=complementary,
-                    items=[dict(
-                        id=self.job.pk,
-                        title=self.job.proposal.description,
-                        unit_price=self.value,
-                        quantity=1,
-                        tangible=False,
-                        category='Services',
-                        date=f'{self.job.start_datetime.year}-{self.job.start_datetime.month}-{self.job.start_datetime.day}'
-                    )]
+                ),
+                items=[dict(
+                    id=self.job.pk,
+                    title=self.job.proposal.description,
+                    unit_price=self.value,
+                    quantity=1,
+                    tangible=False,
+                    category='Services',
+                    date=f'{self.job.start_datetime.year}-{self.job.start_datetime.month}-{self.job.start_datetime.day}'
+                )],
+                metadata=dict(
+                    payment=self.uuid,
                 )
             ))
-            if trx['id'] is not None:
+            if self.__transaction['status'] == 'paid':
                 self.paid = True
                 self.save(update_fields=['paid'])
-            return self.paid, trx
-        return self.paid, None
+        return self.paid, self.transaction
 
     @property
     def postback_url(self):
