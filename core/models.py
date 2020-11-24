@@ -171,17 +171,21 @@ class User(AbstractUser):
         return cls.object.get(email='deleted@user.com')
 
     def confirm_email(self):
-        self.email_user(
-            'Confirmação de E-mail',
-            message=render_to_string(
-                'email_template.html',
-                {
-                    'user': self,
-                    'token': account_activation_token.make_token(self)
-                }
-            ),
-            from_email=settings.CONFIRMATION_LINK,
-        )
+        if not self.is_active:
+            self.email_user(
+                'Confirmação de E-mail',
+                message=render_to_string(
+                    'email_template.html',
+                    {
+                        'user': self,
+                        'token': account_activation_token.make_token(self),
+                        'link': settings.CONFIRMATION_LINK,
+                    }
+                ),
+                from_email=settings.SENDER_EMAIL,
+            )
+            return True
+        return False
 
     def activate(self, token):
         if account_activation_token.check_token(self, token):

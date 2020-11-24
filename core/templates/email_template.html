@@ -1,0 +1,7 @@
+{% autoescape off %}
+Hi,
+Por favor, clique no link abaixo para confirmar seu email,
+<a href="{{ link }}/{{ user.uuid }}/{{ token }}">Confirmar</a>
+Ou cole no seu navegador:
+{{ link }}/{{ user.uuid }}/{{ token }}
+{% endautoescape %}
