@@ -7,8 +7,13 @@ from django.conf import settings
 import uuid
 
 User = get_user_model()
+
 class Payment(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False
+    )
     client = models.ForeignKey(
         User, 
         on_delete=models.SET(User.get_deleted_user),

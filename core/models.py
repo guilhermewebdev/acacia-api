@@ -1,12 +1,25 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MaxValueValidator, validate_email, RegexValidator, MinValueValidator
+from django.core.validators import validate_email, RegexValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.contrib.postgres.fields import ArrayField
 from functools import reduce
 from pagarme import customer
+from django.template.loader import render_to_string
 import re
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils import six
+from django.conf import settings
+
+class TokenGenerator(PasswordResetTokenGenerator):
+    def _make_hash_value(self, user, timestamp):
+        return (
+            six.text_type(user.pk) + six.text_type(timestamp) +
+            six.text_type(user.is_active)
+        )
+account_activation_token = TokenGenerator()
 
 STATES = (
     ('AC', 'Acre'),
@@ -98,6 +111,11 @@ def validate_cpf(value):
 
 
 class User(AbstractUser):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+    )
     email = models.CharField(
         unique=True,
         validators=[validate_email],
@@ -151,6 +169,26 @@ class User(AbstractUser):
     @staticmethod
     def get_deleted_user(cls):
         return cls.object.get(email='deleted@user.com')
+
+    def confirm_email(self):
+        self.email_user(
+            'Confirmação de E-mail',
+            message=render_to_string(
+                'email_template.html',
+                {
+                    'user': self,
+                    'token': account_activation_token.make_token(self)
+                }
+            ),
+            from_email=settings.CONFIRMATION_LINK,
+        )
+
+    def activate(self, token):
+        if account_activation_token.check_token(self, token):
+            self.is_active = True
+            self.save(update_fields=['is_active'])
+            return True
+        return False
 
     def create_customer(self, cpf, zip_code, neighborhood, street, street_number, phone, ddd):
         if not self.saved_in_pagarme:
