@@ -10,14 +10,13 @@ from pagarme import customer
 from django.template.loader import render_to_string
 import re
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils import six
 from django.conf import settings
 
 class TokenGenerator(PasswordResetTokenGenerator):
     def _make_hash_value(self, user, timestamp):
         return (
-            six.text_type(user.pk) + six.text_type(timestamp) +
-            six.text_type(user.is_active)
+            str(user.pk) + str(timestamp) +
+            str(user.is_active)
         )
 account_activation_token = TokenGenerator()
 
@@ -154,17 +153,19 @@ class User(AbstractUser):
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
+    __costumer = None
+
     @property
     def is_professional(self):
         return hasattr(self, 'professional')
     
     @property
     def customer(self):
-        if self.saved_in_pagarme:
+        if self.saved_in_pagarme and not self.__costumer:
             return customer.find_by({
                 'email': self.email
             })
-        return None
+        return self.__costumer
 
     @staticmethod
     def get_deleted_user(cls):
@@ -197,7 +198,7 @@ class User(AbstractUser):
         if not self.saved_in_pagarme:
             validate_cpf(cpf)
             unmasked_cpf = re.sub('[^0-9]', '', cpf)
-            __customer = customer.create( {
+            self.__customer = customer.create( {
                 'email': self.email,
                 'name': self.full_name,
                 'document_number': unmasked_cpf,
@@ -212,10 +213,10 @@ class User(AbstractUser):
                     'ddd': ddd
                 }
             })
-            if __customer['id'] is not None:
+            if self.__customer['id'] is not None:
                 self.saved_in_pagarme = True
                 self.save()
-            return __customer
+            return self.__customer
         return self.customer
 
     class Meta(AbstractUser.Meta):

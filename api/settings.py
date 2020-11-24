@@ -35,6 +35,8 @@ PAGARME_CRYPTO = os.environ.get('PAGARME_CRYPTO')
 CONFIRMATION_LINK = os.environ.get('CONFIRMATION_LINK')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
 
+PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
+
 # Application definition
 
 INSTALLED_APPS = [

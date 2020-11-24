@@ -1,9 +1,11 @@
 from django.core.exceptions import ValidationError
+from pagarme import customer
 from services.models import Job
 from core.models import Professional
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from pagarme import transaction
 import uuid
 
 User = get_user_model()
@@ -34,10 +36,48 @@ class Payment(models.Model):
     registration_date = models.DateTimeField(
         auto_now=True,
     )
+    paid = models.BooleanField(
+        default=False,
+    )
+
+    def pay(self, card_hash, street, street_number, zipcode, state, city, neighborhood, country='BR', complementary='_'):
+        if not self.paid:
+            trx = transaction.create(dict(
+                amount=int(self.value * 100),
+                card_hash=card_hash,
+                customer=self.client.customer,
+                payment_method='credit_card',
+                postback_url=self.postback_url,
+                soft_descriptor=settings.PAYMENT_DESCRIPTION,
+                billing=dict(
+                    street=street,
+                    street_number=street_number,
+                    zipcode=zipcode,
+                    state=state,
+                    city=city,
+                    neighborhood=neighborhood,
+                    country=country,
+                    complementary=complementary,
+                    items=[dict(
+                        id=self.job.pk,
+                        title=self.job.proposal.description,
+                        unit_price=self.value,
+                        quantity=1,
+                        tangible=False,
+                        category='Services',
+                        date=f'{self.job.start_datetime.year}-{self.job.start_datetime.month}-{self.job.start_datetime.day}'
+                    )]
+                )
+            ))
+            if trx['id'] is not None:
+                self.paid = True
+                self.save(update_fields=['paid'])
+            return self.paid, trx
+        return self.paid, None
 
     @property
     def postback_url(self):
-        return f'{settings.HOST}/{self.uuid}'
+        return f'{settings.HOST}/postback/{self.uuid}'
 
     def validate_value(self):
         if self.value != self.job.value:
