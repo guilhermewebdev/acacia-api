@@ -1,10 +1,11 @@
 from django.core.exceptions import ValidationError
+from pagarme import recipient
 from services.models import Job
 from core.models import Professional
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from pagarme import transaction
+from pagarme import transaction, transfer
 import uuid
 
 User = get_user_model()
@@ -89,7 +90,7 @@ class Payment(models.Model):
 
     @property
     def postback_url(self):
-        return f'{settings.HOST}/postback/{self.uuid}'
+        return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
     def validate_value(self):
         if self.value != self.job.value:
@@ -111,6 +112,41 @@ class CashOut(models.Model):
     registration_date = models.DateTimeField(
         auto_now=True,
     )
+    withdrawn = models.BooleanField(
+        default=False,
+    )
+    pagerme_id = models.CharField(
+        max_length=6,
+        null=True,
+        blank=True,
+    )
+    __transfer = {}
+
+    @property
+    def transfer(self):
+        if (self.__transfer == {}) and self.pagerme_id:
+            self.__transfer = transfer.find_by({
+                'id': self.pagerme_id
+            })
+        return self.__transfer
+
+    def cancel_withdraw(self):
+        if self.withdraw and self.pagerme_id:
+            self.__transfer = transfer.cancel(self.pagerme_id)
+            if self.__transfer['status'] == 'canceled':
+                self.withdraw = False
+        return self.__transfer
+
+    def withdraw(self):
+        if not self.withdraw and not self.pagerme_id:
+            self.__transfer = transfer.create(dict(
+                amount=int(self.value * 85),
+                recipient_id=self.professional.recipient.get('id', None)
+            ))
+            if 'id' in self.__transfer:
+                self.pagerme_id = self.__transfer['id']
+                self.withdraw = True
+        return self.__transfer
 
     def validate_value(self):
         if self.value != self.professional.cash:

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.contrib.postgres.fields import ArrayField
 from functools import reduce
-from pagarme import customer
+from pagarme import customer, recipient
 from django.template.loader import render_to_string
 import re
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -137,10 +137,22 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
+    celphone_ddd = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        validators=[RegexValidator('^[0-9]{2}$')]
+    )
     celphone = models.CharField(
         max_length=11,
         null=True,
         blank=True,
+    )
+    telephone_ddd = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        validators=[RegexValidator('^[0-9]{2}$')]
     )
     telephone = models.CharField(
         max_length=10,
@@ -216,7 +228,6 @@ class User(AbstractUser):
             if self.__customer['id'] is not None:
                 self.saved_in_pagarme = True
                 self.save()
-            return self.__customer
         return self.customer
 
     class Meta(AbstractUser.Meta):
@@ -337,6 +348,59 @@ class Professional(models.Model):
         max_length=6,
         validators=[RegexValidator('^[0-9]{2}\.?[0-9]{3}$')],
     )
+    saved_in_pagarme = models.BooleanField(
+        default=False
+    )
+    __recipient = {}
+
+    @property
+    def recipient(self):
+        if self.saved_in_pagarme and not self.__recipient:
+            self.__recipient = recipient.find_by({
+                "email": self.user.email
+            })
+        return self.__recipient
+    
+    @property
+    def postback_url(self):
+        return f'{settings.HOST}/postback/professional/{self.uuid}/'
+
+    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name, account_type):
+        unmasked_cpf = re.sub('[^0-9]', '', self.cpf)
+        if not self.saved_in_pagarme:
+            self.__recipient = recipient.create({
+                "type": "individual",
+                "document_number": unmasked_cpf,
+                "name": self.user.full_name,
+                "email": self.user.email,
+                "postback_url": self.postback_url,
+                "bank_account": {
+                    "agencia": agency, 
+                    "agencia_dv": agency_dv, 
+                    "bank_code": bank_code, 
+                    "conta": account, 
+                    "conta_dv": account_dv, 
+                    "document_number": unmasked_cpf, 
+                    "legal_name": legal_name.upper(), 
+                    "type": account_type,
+                },
+                "phone_numbers": [
+                    {
+                        "ddd": self.user.telephone_ddd,
+                        "number": f'{self.user.telephone_ddd}{self.user.telephone}',
+                        "type": "phone"
+                    },
+                    {
+                        "ddd": self.user.celphone_ddd,
+                        "number": f'{self.user.celphone_ddd}{self.user.celphone}',
+                        "type": "mobile"
+                    }
+                ]
+            })
+            if self.__recipient['id'] is not None:
+                self.saved_in_pagarme = True
+        return self.recipient
+    
 
     @property
     def avg_rating(self):
