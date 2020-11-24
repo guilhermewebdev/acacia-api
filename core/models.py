@@ -384,6 +384,16 @@ class Professional(models.Model):
     def postback_url(self):
         return f'{settings.HOST}/postback/professional/{self.uuid}/'
 
+    @property
+    def avg_rating(self):
+        return self.jobs.filter(rate__isnull=False).all().aggregate(models.Avg('rate__grade'))['rate__grade__avg']
+
+    @property
+    def cash(self):
+        cash_in = int(self.receipts.all().aggregate(models.Sum('value'))['value__sum'] or 0)
+        cash_out = int(self.cash_outs.all().aggregate(models.Sum('value'))['value__sum'] or 0)
+        return cash_in - cash_out
+
     def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name, account_type):
         unmasked_cpf = re.sub('[^0-9]', '', self.cpf)
         if not self.saved_in_pagarme:
@@ -420,17 +430,6 @@ class Professional(models.Model):
                 self.saved_in_pagarme = True
         return self.recipient
     
-
-    @property
-    def avg_rating(self):
-        return self.jobs.filter(rate__isnull=False).all().aggregate(models.Avg('rate__grade'))['rate__grade__avg']
-
-    @property
-    def cash(self):
-        cash_in = int(self.receipts.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        cash_out = int(self.cash_outs.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        return cash_in - cash_out
-
     @staticmethod
     def get_deleted_professional(cls):
         return cls.object.get(user__email='deleted@user.com')

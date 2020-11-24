@@ -27,11 +27,15 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Application definition
+
 pagarme.authentication_key(os.environ.get('PAGARME_API_KEY'))
 
 ALLOWED_HOSTS = ['*']
 
 AXES_ENABLED = not DEBUG
+
+HOST = os.environ.get('HOST')
 
 PAGARME_API_KEY = os.environ.get('PAGARME_API_KEY')
 PAGARME_CRYPTO = os.environ.get('PAGARME_CRYPTO')
@@ -41,7 +45,7 @@ SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
 
 PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
 
-# Application definition
+CHANGE_PASSWORD_LINK = os.environ.get('CHANGE_PASSWORD_LINK')
 
 INSTALLED_APPS = [
     'django.contrib.admin',

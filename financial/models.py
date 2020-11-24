@@ -51,6 +51,10 @@ class Payment(models.Model):
             })
         return self.__transaction
 
+    @property
+    def postback_url(self):
+        return f'{settings.HOST}/postback/payment/{self.uuid}/'
+
     def pay(self, card_hash, street, street_number, zipcode, state, city, neighborhood, country='BR', complementary='_'):
         if not self.paid:
             self.__transaction = transaction.create(dict(
@@ -87,10 +91,6 @@ class Payment(models.Model):
                 self.paid = True
                 self.save(update_fields=['paid'])
         return self.paid, self.transaction
-
-    @property
-    def postback_url(self):
-        return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
     def validate_value(self):
         if self.value != self.job.value:
