@@ -195,3 +195,24 @@ class LoginTest(JSONWebTokenTestCase):
                 }
             }
         })
+    
+    def test_update_user_without_login(self):
+        self.client.logout()
+        query = '''
+            mutation UpdateUser($data: UserUpdateInput!){
+                updateUser(input: $data){
+                    user {
+                        fullName
+                        uuid
+                        email
+                    }
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'data': {
+                'fullName': "Nerso da Capitinga",
+                'email': self.user.email
+            }
+        })
+        self.assertEqual(result['errors'][0]['message'], 'You do not have permission to perform this action')

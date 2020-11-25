@@ -12,6 +12,9 @@ class UserChangeForm(UCHF):
     email = forms.EmailField(
         required=False,
     )
+    full_name = forms.CharField(
+        required=False,
+    )
     class Meta:
         model = User
         fields = (
