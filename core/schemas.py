@@ -55,7 +55,19 @@ class PasswordReset(DjangoFormMutation):
     class Meta:
         form_class = forms.PasswordResetForm
 
+class UserActivation(DjangoFormMutation):
+    is_active = graphene.Field(graphene.Boolean, required=True)
+    token = None
+    uuid = None
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        return cls(errors=[], is_active=form.save())
+    class Meta:
+        form_class = forms.UserActivationForm
+
 class Mutation(object):
     create_user = UserCreation.Field()
     update_user = UserUpdate.Field()
     reset_password = PasswordReset.Field()
+    activate_user = UserActivation.Field()

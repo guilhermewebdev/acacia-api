@@ -28,3 +28,11 @@ class PasswordResetForm(PRF):
         email = self.cleaned_data['email']
         user = User.objects.get(email=email)
         return user.recover_password()
+
+class UserActivationForm(forms.Form):
+    token = forms.CharField(required=True)
+    uuid = forms.UUIDField(required=True)
+
+    def save(self, *args, **kwargs):
+        user = User.objects.get(uuid=self.cleaned_data['uuid'])
+        return user.activate(self.cleaned_data['token'])

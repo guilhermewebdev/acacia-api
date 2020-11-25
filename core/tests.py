@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db.models import query
 from django.test import TestCase
-from .models import User, Professional
+from .models import User, Professional, account_activation_token
 from graphql_jwt.testcases import JSONWebTokenTestCase
 import json
 class TestUser(TestCase):
@@ -239,3 +239,21 @@ class LoginTest(JSONWebTokenTestCase):
                 }
             }
         })
+
+    def test_activation_user(self):
+        self.client.logout()
+        query = '''
+            mutation ActivateUser($input: UserActivationInput!){
+                activateUser(input: $input) {
+                    isActive
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'input': {
+                'token': account_activation_token.make_token(self.user),
+                'uuid': str(self.user.uuid)
+            }
+        })
+        self.assertNotIn('errors', result)
+        self.assert_(result['data']['activateUser']['isActive'])
