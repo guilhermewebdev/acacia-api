@@ -1,11 +1,24 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MaxValueValidator, validate_email, RegexValidator, MinValueValidator
+from django.core.validators import validate_email, RegexValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.contrib.postgres.fields import ArrayField
 from functools import reduce
+from pagarme import customer, recipient
+from django.template.loader import render_to_string
 import re
+from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator as dtg
+from django.conf import settings
+
+class TokenGenerator(PasswordResetTokenGenerator):
+    def _make_hash_value(self, user, timestamp):
+        return (
+            str(user.pk) + str(timestamp) +
+            str(user.is_active)
+        )
+account_activation_token = TokenGenerator()
 
 STATES = (
     ('AC', 'Acre'),
@@ -97,6 +110,11 @@ def validate_cpf(value):
 
 
 class User(AbstractUser):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+    )
     email = models.CharField(
         unique=True,
         validators=[validate_email],
@@ -119,22 +137,117 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
+    celphone_ddd = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        validators=[RegexValidator('^[0-9]{2}$')]
+    )
     celphone = models.CharField(
         max_length=11,
         null=True,
         blank=True,
+    )
+    telephone_ddd = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        validators=[RegexValidator('^[0-9]{2}$')]
     )
     telephone = models.CharField(
         max_length=10,
         null=True,
         blank=True,
     )
+    saved_in_pagarme = models.BooleanField(
+        default=False
+    )
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
+
+    __costumer = None
 
     @property
     def is_professional(self):
         return hasattr(self, 'professional')
+    
+    @property
+    def customer(self):
+        if self.saved_in_pagarme and not self.__costumer:
+            return customer.find_by({
+                'email': self.email
+            })
+        return self.__costumer
+
+    @staticmethod
+    def get_deleted_user(cls):
+        return cls.object.get(email='deleted@user.com')
+
+    def recover_password(self):
+        self.email_user(
+            'Recuperação de Senha',
+            message=render_to_string(
+                'recover_password_email.html',
+                {
+                    'user': self,
+                    'token': dtg.make_token(self),
+                    'link': settings.CHANGE_PASSWORD_LINK,
+                }
+            )
+        )
+
+    def set_recovered_password(self, token, password):
+        if dtg.check_token(self, token):
+            self.set_password(password)
+            return True
+        return False
+
+    def confirm_email(self):
+        if not self.is_active:
+            self.email_user(
+                'Confirmação de E-mail',
+                message=render_to_string(
+                    'email_template.html',
+                    {
+                        'user': self,
+                        'token': account_activation_token.make_token(self),
+                        'link': settings.CONFIRMATION_LINK,
+                    }
+                ),
+                from_email=settings.SENDER_EMAIL,
+            )
+            return True
+        return False
+
+    def activate(self, token):
+        if account_activation_token.check_token(self, token):
+            self.is_active = True
+            self.save(update_fields=['is_active'])
+        return self.is_active
+
+    def create_customer(self, cpf, zip_code, neighborhood, street, street_number, phone, ddd):
+        if not self.saved_in_pagarme:
+            validate_cpf(cpf)
+            unmasked_cpf = re.sub('[^0-9]', '', cpf)
+            self.__customer = customer.create( {
+                'email': self.email,
+                'name': self.full_name,
+                'document_number': unmasked_cpf,
+                'address': {
+                    'zipcode': zip_code,
+                    'neighborhood': neighborhood,
+                    'street': street,
+                    'street_number': street_number,
+                },
+                'phone': {
+                    'number': phone,
+                    'ddd': ddd
+                }
+            })
+            if self.__customer['id'] is not None:
+                self.saved_in_pagarme = True
+                self.save()
+        return self.customer
 
     class Meta(AbstractUser.Meta):
         swappable='AUTH_USER_MODEL'
@@ -155,8 +268,8 @@ class Availability(models.Model):
         ('SAT', 'Saturday'),
         ('SUN', 'Sunday'),
     )
-    start = models.DateTimeField()
-    end = models.DateTimeField()
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
     recurrence = models.CharField(
         choices=RECURRENCES,
         max_length=1,
@@ -183,11 +296,11 @@ class Availability(models.Model):
     )
 
     def validate_start(self):
-        if self.start < self.registration_date:
+        if self.start_datetime < self.registration_date:
             raise ValidationError('The start date has passed')
 
     def validate_end(self):
-        if self.end < self.start:
+        if self.end_datetime < self.start_datetime:
             raise ValidationError(
                 'The end date cannot be before the start date')
 
@@ -254,35 +367,69 @@ class Professional(models.Model):
         max_length=6,
         validators=[RegexValidator('^[0-9]{2}\.?[0-9]{3}$')],
     )
+    saved_in_pagarme = models.BooleanField(
+        default=False
+    )
+    __recipient = {}
+
+    @property
+    def recipient(self):
+        if self.saved_in_pagarme and not self.__recipient:
+            self.__recipient = recipient.find_by({
+                "email": self.user.email
+            })
+        return self.__recipient
+    
+    @property
+    def postback_url(self):
+        return f'{settings.HOST}/postback/professional/{self.uuid}/'
 
     @property
     def avg_rating(self):
-        return self.rates.all().aggregate(models.Avg('grade'))['grade__avg']
+        return self.jobs.filter(rate__isnull=False).all().aggregate(models.Avg('rate__grade'))['rate__grade__avg']
 
+    @property
+    def cash(self):
+        cash_in = float(self.receipts.all().aggregate(models.Sum('value'))['value__sum'] or 0)
+        cash_out = float(self.cash_outs.all().aggregate(models.Sum('value'))['value__sum'] or 0)
+        return cash_in - cash_out
 
-class Rating(models.Model):
-    client = models.ForeignKey(
-        User,
-        on_delete = models.DO_NOTHING,
-        related_name='rates',
-    )
-    professional = models.ForeignKey(
-        Professional,
-        on_delete = models.CASCADE,
-        related_name='rates',
-    )
-    grade = models.IntegerField(
-        validators=[MaxValueValidator(5), MinValueValidator(1)]
-    )
-
-    def validate_user(self):
-        if self.client == self.professional.user:
-                raise ValidationError(
-                    'It is not possible to rate yourself'
-                )
-
-    def full_clean(self, *args, **kwargs) -> None:
-        self.validate_user()
-        return super(Rating, self).full_clean(*args, **kwargs)
-    class Meta:
-        unique_together = ('client', 'professional')
+    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name, account_type):
+        unmasked_cpf = re.sub('[^0-9]', '', self.cpf)
+        if not self.saved_in_pagarme:
+            self.__recipient = recipient.create({
+                "type": "individual",
+                "document_number": unmasked_cpf,
+                "name": self.user.full_name,
+                "email": self.user.email,
+                "postback_url": self.postback_url,
+                "bank_account": {
+                    "agencia": agency, 
+                    "agencia_dv": agency_dv, 
+                    "bank_code": bank_code, 
+                    "conta": account, 
+                    "conta_dv": account_dv, 
+                    "document_number": unmasked_cpf, 
+                    "legal_name": legal_name.upper(), 
+                    "type": account_type,
+                },
+                "phone_numbers": [
+                    {
+                        "ddd": self.user.telephone_ddd,
+                        "number": f'{self.user.telephone_ddd}{self.user.telephone}',
+                        "type": "phone"
+                    },
+                    {
+                        "ddd": self.user.celphone_ddd,
+                        "number": f'{self.user.celphone_ddd}{self.user.celphone}',
+                        "type": "mobile"
+                    }
+                ]
+            })
+            if self.__recipient['id'] is not None:
+                self.saved_in_pagarme = True
+        return self.recipient
+    
+    @staticmethod
+    def get_deleted_professional(cls):
+        return cls.object.get(user__email='deleted@user.com')

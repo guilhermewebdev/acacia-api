@@ -1,27 +1,28 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
-from .models import Message, User
+from .models import Payment
+from django.contrib.auth import get_user_model
 from core.models import Professional
 from services.models import Job, Proposal
 from django.utils import timezone
 
-
+User = get_user_model()
 TODAY = timezone.now()
 timedelta = timezone.timedelta
-class TestChat(TestCase):
+
+class TestPayment(TestCase):
 
     def setUp(self):
         self.client = User(
-            email='teste4@teste.com',
-            full_name='Tom Cruise',
-            celphone='31988776455',
+            email='tete@tete.com',
             password='senha',
+            full_name='Fulano de tal',
         )
         self.client.save()
         self.user = User(
-            email='teste5@teste.com',
-            full_name='Tom Jobim',
-            celphone='31988776615',
+            email='tet2e@tete.com',
             password='senha',
+            full_name='Fulano de tal',
         )
         self.user.save()
         self.professional = Professional(
@@ -30,11 +31,12 @@ class TestChat(TestCase):
             city='Belo Horizonte',
             address='Centro',
             zip_code='36200-000',
-            cpf="752.861.710-52",
-            rg='mg343403',
+            cpf="529.982.247-25",
+            rg='mg3434032',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
-            coren='10.002'
+            avg_price=80,
+            coren='10.000'
         )
         self.professional.save()
         self.proposal = Proposal(
@@ -50,24 +52,24 @@ class TestChat(TestCase):
             description='Lorem Ipsum dolores'
         )
         self.proposal.save()
-        self.job = Job(
-            proposal=self.proposal,
+        self.proposal.accept()
+        self.job = self.proposal.job
+        self.payment = Payment(
             client=self.client,
             professional=self.professional,
             value=300,
-            start_datetime=TODAY + timedelta(days=1)
+            job=self.job
         )
-        self.job.save()
+        self.payment.full_clean()
+        self.payment.save()
+    
+    def test_payment(self):
+        self.payment.full_clean()
 
-    def test_send_message(self):
-        message = Message(
-            sender=self.client,
-            receiver=self.user,
-            content='Hello! How are you?',
-            job=self.job,
-        )
-        message.save()
-        self.assertEqual(
-            self.client.messages_sent.all()[0],
-            self.user.received_messages.all()[0]
-        )
+    def test_wrong_payment_value(self):
+        self.payment.value = 100
+        self.assertRaises(ValidationError, self.payment.full_clean)
+
+    def test_cash(self):
+        self.assertEqual(self.professional.cash, 300)
+        

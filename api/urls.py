@@ -15,7 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from financial.views import payment_postback
+from core.views import professional_postback
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('postback/payment/<uuid:str>/', payment_postback),
+    path('postback/professional/<uuid:str>/', professional_postback),
 ]

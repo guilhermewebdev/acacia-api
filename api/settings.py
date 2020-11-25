@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 import os
+import pagarme
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,11 +27,29 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# Payment settings
 
-AXES_ENABLED = not DEBUG
+pagarme.authentication_key(os.environ.get('PAGARME_API_KEY'))
+
+PAGARME_API_KEY = os.environ.get('PAGARME_API_KEY')
+
+PAGARME_CRYPTO = os.environ.get('PAGARME_CRYPTO')
+
+CONFIRMATION_LINK = os.environ.get('CONFIRMATION_LINK')
+
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
+
+CASH_OUT_COMMISSION = float(os.environ.get('CASH_OUT_COMMISSION', 15))
+
+PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
 
 # Application definition
+
+HOST = os.environ.get('HOST')
+
+ALLOWED_HOSTS = [HOST]
+
+AXES_ENABLED = not DEBUG
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -42,6 +62,7 @@ INSTALLED_APPS = [
     'axes',
     'services',
     'chat',
+    'financial',
 ]
 
 MIDDLEWARE = [
@@ -113,6 +134,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 AUTH_USER_MODEL = 'core.User'
+
+CHANGE_PASSWORD_LINK = os.environ.get('CHANGE_PASSWORD_LINK')
 
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',

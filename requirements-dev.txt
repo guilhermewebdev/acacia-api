@@ -3,3 +3,6 @@ psycopg2-binary
 Pillow
 django-axes
 uvicorn
+pagarme-python
+graphene-django
+django-graphql-jwt
