@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 from pathlib import Path
 import os
 import pagarme
+from django.utils.timezone import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -63,6 +64,7 @@ INSTALLED_APPS = [
     'services',
     'chat',
     'financial',
+    'graphene_django',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +76,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
 ]
 
 ROOT_URLCONF = 'api.urls'
@@ -96,6 +99,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'api.wsgi.application'
 
+GRAPHENE = {
+    "SCHEMA": "api.schema.schema",
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    ],
+}
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
@@ -130,7 +139,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesBackend',
-    'api.backends.EmailBackend'
+    'graphql_jwt.backends.JSONWebTokenBackend',
+    'api.backends.EmailBackend',
 ]
 
 AUTH_USER_MODEL = 'core.User'
@@ -149,6 +159,14 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.UnsaltedMD5PasswordHasher',
     'django.contrib.auth.hashers.CryptPasswordHasher',
 ]
+
+GRAPHQL_JWT = {
+    'JWT_VERIFY_EXPIRATION': False,
+    'JWT_AUDIENCE': True,
+    'JWT_HIDE_TOKEN_FIELDS': True,
+    'JWT_CSRF_ROTATION': True,
+    'JWT_COOKIE_SECURE': not DEBUG,
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/

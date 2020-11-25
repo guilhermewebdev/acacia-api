@@ -17,9 +17,13 @@ from django.contrib import admin
 from django.urls import path
 from financial.views import payment_postback
 from core.views import professional_postback
+from graphene_django.views import GraphQLView
+from django.views.decorators.csrf import csrf_exempt
+from graphql_jwt.decorators import jwt_cookie
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
+    path('api/', jwt_cookie(csrf_exempt(GraphQLView.as_view(graphiql=True)))),
 ]

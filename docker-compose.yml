@@ -19,6 +19,7 @@ services:
             DB: nice_marmot
             DB_PORT: '5432'
             SECRET_KEY: fj2l4jl2j4l324jl34
+            HOST: localhost
 
     db:
         image: postgres
