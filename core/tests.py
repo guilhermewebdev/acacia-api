@@ -141,3 +141,57 @@ class LoginTest(JSONWebTokenTestCase):
 
         result = self.execute(query, variables)
         assert result['data']['tokenAuth']['payload']['email'] == self.user.email
+
+    def test_sign_up(self):
+        query = '''
+            mutation SignUp($credentials: UserCreationInput!){
+                createUser(input: $credentials) {
+                    user {
+                        fullName
+                        uuid
+                    }
+                }
+            }
+        '''
+
+        result = self.execute(query, dict(credentials={
+            "fullName": "Teste Da Silva",
+            "email": "ttt@ggg.com",
+            "password1": "avg12340",
+            "password2": "avg12340"
+        }))
+
+        assert not 'error' in result
+        assert 'data' in result
+        assert not 'password' in result['data']['createUser']['user']
+
+    def test_update_user(self):
+        self.client.authenticate(self.user)
+        query = '''
+            mutation UpdateUser($data: UserUpdateInput!){
+                updateUser(input: $data){
+                    user {
+                        fullName
+                        uuid
+                        email
+                    }
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'data': {
+                'fullName': "Nerso da Capitinga",
+                'email': self.user.email
+            }
+        })
+        self.assertEqual(result, {
+            'data': {
+                'updateUser': {
+                    'user': {
+                        'fullName': 'Nerso da Capitinga',
+                        'uuid': str(self.user.uuid),
+                        'email': self.user.email,
+                    }
+                }
+            }
+        })
