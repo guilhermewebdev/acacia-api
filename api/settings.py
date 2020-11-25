@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'services',
     'chat',
     'financial',
+    'graphene_django',
 ]
 
 MIDDLEWARE = [
@@ -96,6 +97,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'api.wsgi.application'
 
+GRAPHENE = {
+    "SCHEMA": "api.schema.schema"
+}
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
