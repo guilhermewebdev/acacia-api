@@ -190,6 +190,9 @@ class User(AbstractUser):
     saved_in_pagarme = models.BooleanField(
         default=False
     )
+    is_active = models.BooleanField(
+        default=False
+    )
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 

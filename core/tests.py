@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
+from django.db.models import query
 from django.test import TestCase
-from .models import User, Professional
+from .models import User, Professional, account_activation_token
 from graphql_jwt.testcases import JSONWebTokenTestCase
 import json
 class TestUser(TestCase):
@@ -115,7 +116,8 @@ class LoginTest(JSONWebTokenTestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email='test@tst.com',
-            password='abda1234'
+            password='abda1234',
+            is_active=True,
         )
         self.client.authenticate(self.user)
 
@@ -123,6 +125,29 @@ class LoginTest(JSONWebTokenTestCase):
         return json.loads(json.dumps(self.client.execute(
             query, variables
         ).to_dict(dict_class=dict)))
+
+    def test_activation_user(self):
+        self.client.logout()
+        self.user.is_active = False
+        self.user.save()
+        self.assertEqual(self.user.is_active, False)
+        query = '''
+            mutation ActivateUser($input: UserActivationInput!){
+                activateUser(input: $input) {
+                    isActive
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'input': {
+                'token': account_activation_token.make_token(self.user),
+                'uuid': str(self.user.uuid)
+            }
+        })
+        self.assertNotIn('errors', result)
+        self.assert_(result['data']['activateUser']['isActive'])
+        user = User.objects.get(email=self.user.email)
+        self.assert_(user.is_active)
 
     def test_get_user(self):
         query = '''
@@ -195,3 +220,70 @@ class LoginTest(JSONWebTokenTestCase):
                 }
             }
         })
+    
+    def test_update_user_without_login(self):
+        self.client.logout()
+        query = '''
+            mutation UpdateUser($data: UserUpdateInput!){
+                updateUser(input: $data){
+                    user {
+                        fullName
+                        uuid
+                        email
+                    }
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'data': {
+                'fullName': "Nerso da Capitinga",
+                'email': self.user.email
+            }
+        })
+        self.assertEqual(result['errors'][0]['message'], 'You do not have permission to perform this action')
+
+    def test_reset_password(self):
+        self.client.logout()
+        query = '''
+            mutation ResetPassword($input: PasswordResetInput!){
+                resetPassword(input: $input){
+                    email
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'input': {
+                'email': self.user.email
+            }
+        })
+        self.assertEqual(result, {
+            'data': {
+                'resetPassword': {
+                    'email': self.user.email
+                }
+            }
+        })
+
+    def test_delete_user(self):
+        user = User.objects.create_user(
+            email='test@tsdt.com',
+            password='abda1234',
+            is_active=True,
+        )
+        user.save()
+        query = '''
+            mutation DeleteUser($input: UserDeletionInput!){
+                deleteUser(input: $input){
+                    deleted
+                    password
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'input': {
+                'password': 'abda1234',
+                'email': user.email
+            }
+        })
+        print(result)
+        self.assert_(result['data']['deleteUser']['deleted'])
