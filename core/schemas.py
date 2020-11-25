@@ -1,5 +1,4 @@
 import graphene
-from graphene_django.types import ErrorType
 from . import forms, models
 from graphene_django import DjangoObjectType
 from graphene_django.forms.mutation import DjangoFormMutation, DjangoModelFormMutation
@@ -57,8 +56,6 @@ class PasswordReset(DjangoFormMutation):
 
 class UserActivation(DjangoFormMutation):
     is_active = graphene.Field(graphene.Boolean, required=True)
-    token = None
-    uuid = None
 
     @classmethod
     def perform_mutate(cls, form, info):
@@ -66,8 +63,19 @@ class UserActivation(DjangoFormMutation):
     class Meta:
         form_class = forms.UserActivationForm
 
+class UserDeletion(DjangoFormMutation):
+    deleted = graphene.Field(graphene.Boolean, required=True)
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        form.clean()
+        return cls(errors=[], password='', email='', deleted=form.save())
+    class Meta:
+        form_class = forms.UserDeletionForm
+
 class Mutation(object):
     create_user = UserCreation.Field()
     update_user = UserUpdate.Field()
     reset_password = PasswordReset.Field()
     activate_user = UserActivation.Field()
+    delete_user = UserDeletion.Field()

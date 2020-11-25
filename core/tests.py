@@ -263,3 +263,27 @@ class LoginTest(JSONWebTokenTestCase):
                 }
             }
         })
+
+    def test_delete_user(self):
+        user = User.objects.create_user(
+            email='test@tsdt.com',
+            password='abda1234',
+            is_active=True,
+        )
+        user.save()
+        query = '''
+            mutation DeleteUser($input: UserDeletionInput!){
+                deleteUser(input: $input){
+                    deleted
+                    password
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'input': {
+                'password': 'abda1234',
+                'email': user.email
+            }
+        })
+        print(result)
+        self.assert_(result['data']['deleteUser']['deleted'])
