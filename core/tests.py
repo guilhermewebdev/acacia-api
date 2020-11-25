@@ -1,9 +1,8 @@
-from django.core.checks.messages import Error
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from django.db.utils import IntegrityError
-from django.test import client
 from .models import User, Professional
+from graphql_jwt.testcases import JSONWebTokenTestCase
+import json
 class TestUser(TestCase):
 
     def test_creation(self):
@@ -111,3 +110,34 @@ class TestUser(TestCase):
             coren='10.400'
         )
         self.assertRaises(ValidationError, professional.full_clean)
+
+class LoginTest(JSONWebTokenTestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='test@tst.com',
+            password='abda1234'
+        )
+        self.client.authenticate(self.user)
+
+    def execute(self, query, variables):
+        return json.loads(json.dumps(self.client.execute(
+            query, variables
+        ).to_dict(dict_class=dict)))
+
+    def test_get_user(self):
+        query = '''
+            mutation Login($email: String!, $password: String!) {
+                tokenAuth(email: $email, password: $password) {
+                    payload
+                    refreshExpiresIn
+                }
+            }
+        '''
+
+        variables = {
+            'email': self.user.email,
+            'password': 'abda1234'
+        }
+
+        result = self.execute(query, variables)
+        assert result['data']['tokenAuth']['payload']['email'] == self.user.email
