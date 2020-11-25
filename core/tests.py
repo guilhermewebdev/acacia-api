@@ -7,7 +7,7 @@ from .models import User, Professional
 class TestUser(TestCase):
 
     def test_creation(self):
-        user = User(
+        user = User.objects.create_user(
             email='teste@teste.com',
             full_name='Guido Rossum',
             celphone='32999198822',
