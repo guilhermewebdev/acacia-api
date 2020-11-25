@@ -38,8 +38,6 @@ PAGARME_CRYPTO = os.environ.get('PAGARME_CRYPTO')
 
 CONFIRMATION_LINK = os.environ.get('CONFIRMATION_LINK')
 
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
-
 CASH_OUT_COMMISSION = float(os.environ.get('CASH_OUT_COMMISSION', 15))
 
 PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
@@ -47,6 +45,10 @@ PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
 # Application definition
 
 HOST = os.environ.get('HOST')
+
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
+
+CLIENT_DOMAIN = os.environ.get('CLIENT_DOMAIN')
 
 ALLOWED_HOSTS = [HOST]
 

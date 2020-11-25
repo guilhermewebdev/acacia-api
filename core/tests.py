@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.db.models import query
 from django.test import TestCase
 from .models import User, Professional
 from graphql_jwt.testcases import JSONWebTokenTestCase
@@ -216,3 +217,25 @@ class LoginTest(JSONWebTokenTestCase):
             }
         })
         self.assertEqual(result['errors'][0]['message'], 'You do not have permission to perform this action')
+
+    def test_reset_password(self):
+        self.client.logout()
+        query = '''
+            mutation ResetPassword($input: PasswordResetInput!){
+                resetPassword(input: $input){
+                    email
+                }
+            }
+        '''
+        result = self.execute(query, {
+            'input': {
+                'email': self.user.email
+            }
+        })
+        self.assertEqual(result, {
+            'data': {
+                'resetPassword': {
+                    'email': self.user.email
+                }
+            }
+        })

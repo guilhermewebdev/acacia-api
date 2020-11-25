@@ -2,9 +2,8 @@ import graphene
 from graphene_django.types import ErrorType
 from . import forms, models
 from graphene_django import DjangoObjectType
-from graphene_django.forms.mutation import DjangoModelFormMutation
+from graphene_django.forms.mutation import DjangoFormMutation, DjangoModelFormMutation
 from graphql_jwt.decorators import login_required
-
 class UserType(DjangoObjectType):
     is_professional = graphene.Field(graphene.Boolean)
     customer = graphene.Field(graphene.JSONString)
@@ -52,6 +51,11 @@ class UserUpdate(DjangoModelFormMutation):
         form_class = forms.UserChangeForm
         return_field_name = 'user'
 
+class PasswordReset(DjangoFormMutation):
+    class Meta:
+        form_class = forms.PasswordResetForm
+
 class Mutation(object):
     create_user = UserCreation.Field()
     update_user = UserUpdate.Field()
+    reset_password = PasswordReset.Field()
