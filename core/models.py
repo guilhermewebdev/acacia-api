@@ -76,6 +76,20 @@ class ValidateChoices(object):
                 '%(value) is not a valid option',
                 params={'value': value})
 
+@deconstructible
+class MinOrNullValidator(object):
+    def __init__(self, minimum):
+        self.min = minimum
+
+    def __call__(self, value):
+        if value and value < self.min:
+            raise ValidationError(
+                '%(value) should be more than %(minimum)',
+                params={
+                    'value': value,
+                    'minimum': self.min
+                }
+            )
 
 def invalid_cpf(value):
     raise ValidationError(
@@ -354,8 +368,10 @@ class Professional(models.Model):
     )
     avg_price = models.FloatField(
         verbose_name='Average Price',
-        validators=[MinValueValidator(65)],
+        validators=[MinOrNullValidator(65)],
         default=0,
+        blank=True,
+        null=True,
     )
     state = models.CharField(
         choices=STATES,

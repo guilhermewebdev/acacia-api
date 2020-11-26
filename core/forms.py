@@ -1,16 +1,15 @@
 from django import forms
-from django.contrib.auth import authenticate
 from django.contrib.auth.forms import (
     UserCreationForm as UCF,
     UserChangeForm as UCHF,
     PasswordResetForm as PRF,
-    AuthenticationForm,
 )
 from django.core.exceptions import ValidationError
 from django.utils.text import capfirst
-from .models import User, account_activation_token
-from django.conf import settings
+from .models import User, Professional, validate_cpf
 from django.utils.translation import gettext as _
+import re
+
 class UserCreationForm(UCF):
     class Meta:
         model = User
@@ -105,5 +104,72 @@ class UserDeletionForm(forms.Form):
     
     def save(self):
         user = self.get_user()
-        print(user)
         return user.delete()[0] != 0
+
+class ProfessionalCreationForm(forms.ModelForm):
+    error_messages = {
+        'password_mismatch': _('The two password fields didn’t match.'),
+    }
+    full_name = forms.CharField(
+        max_length=200,
+        required=True,
+    )
+    email = forms.EmailField(
+        max_length=200,
+        required=True,
+    )
+    password1 = forms.CharField(
+        label=_("Password"),
+        strip=False,
+    )
+    password2 = forms.CharField(
+        label=_("Password confirmation"),
+        strip=False,
+        help_text=_("Enter the same password as before, for verification."),
+    )
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise ValidationError(
+                self.error_messages['password_mismatch'],
+                code='password_mismatch',
+            )
+        return password2
+    
+    def clean_cpf(self):
+        validate_cpf(self.cleaned_data.get('cpf'))
+        return re.sub('[^0-9]', '', self.cleaned_data.get('cpf'))
+
+    def clean(self):
+        cleaned_data = super(ProfessionalCreationForm, self).clean()
+        if(cleaned_data['password1'] == cleaned_data['password2']):
+            cleaned_data.pop('password2')
+            self.user = User.objects.create_user(
+                email=cleaned_data.pop('email'),
+                password=cleaned_data.pop('password1'),
+                full_name=cleaned_data.pop('full_name'),
+            )
+            self.user.full_clean()
+            self.professional = Professional(**cleaned_data, user=self.user)
+            self.professional.full_clean()
+        return self.cleaned_data
+    
+    def save(self):
+        self.user.save()
+        self.professional.save()
+        self.user.confirm_email()
+        return self.professional
+    class Meta:
+        model = Professional
+        fields = (
+            "state",
+            "city",
+            "address",
+            "zip_code",
+            "cpf",
+            "rg",
+            "occupation",
+            "coren",
+        )

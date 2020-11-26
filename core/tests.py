@@ -287,3 +287,45 @@ class LoginTest(JSONWebTokenTestCase):
         })
         print(result)
         self.assert_(result['data']['deleteUser']['deleted'])
+
+    def test_creation_professional(self):
+        query = '''
+            mutation CreateProfessional($input: ProfessionalCreationInput!) {
+                createProfessional(input: $input) {
+                    professional {
+                        user {
+                            fullName
+                        }
+                    }
+                }
+            }
+        '''
+        variables = {
+            'input': {
+                'fullName': 'Fulano de Tal',
+                'email': 'gru@ted.com',
+                'password1': 'vd34560',
+                'password2': 'vd34560',
+                'state': 'MG',
+                'city': 'Belo Horizonte',
+                'address': 'Any local',
+                'zipCode': '36200-000',
+                'rg': 'rj46565',
+                'occupation': 'CI',
+                'coren': '20.000',
+                'cpf': '661.034.190-77',
+            }
+        }
+        result = self.execute(query, variables)
+        print(result)
+        self.assertEqual(result, {
+            'data': {
+                'createProfessional': {
+                    'professional': {
+                        'user': {
+                            'fullName': variables['input']['fullName']
+                        }
+                    }
+                }
+            }
+        })
