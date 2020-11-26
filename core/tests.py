@@ -294,6 +294,32 @@ class LoginTest(JSONWebTokenTestCase):
             }
         })
 
+    def test_change_password(self):
+        self.client.authenticate(self.user)
+        query = '''
+            mutation ChangePassword($input: PasswordChangeInput!){
+                changePassword(input: $input){
+                    changed
+                }
+            }
+        '''
+        variables = {
+            'input': {
+                'password': 'abda1234',
+                'password1': 'xicotico',
+                'password2': 'xicotico',
+            }
+        }
+        result = self.execute(query, variables)
+        self.assertEqual(result, {
+            'data': {
+                'changePassword': {
+                    'changed': True,
+                }
+            }
+        })
+
+
 class ProfessionalTest(JSONWebTokenTestCase):
     def setUp(self):
         self.user = User.objects.create_user(
