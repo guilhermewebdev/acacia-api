@@ -272,11 +272,11 @@ class LoginTest(JSONWebTokenTestCase):
             is_active=True,
         )
         user.save()
+        self.client.authenticate(user)
         query = '''
             mutation DeleteUser($input: UserDeletionInput!){
                 deleteUser(input: $input){
                     deleted
-                    password
                 }
             }
         '''
@@ -286,7 +286,13 @@ class LoginTest(JSONWebTokenTestCase):
                 'email': user.email
             }
         })
-        self.assert_(result['data']['deleteUser']['deleted'])
+        self.assertEqual(result,{
+            'data': {
+                'deleteUser': {
+                    'deleted': True,
+                }
+            }
+        })
 
 class ProfessionalTest(JSONWebTokenTestCase):
     def setUp(self):
@@ -413,7 +419,6 @@ class ProfessionalTest(JSONWebTokenTestCase):
             }
         }
         result = self.execute(query, variables)
-        print(result)
         self.assertEqual(result, {
             'data': {
                 'deleteProfessional': {

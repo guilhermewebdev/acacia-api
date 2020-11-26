@@ -45,7 +45,7 @@ class UserActivationForm(forms.Form):
         user = User.objects.get(uuid=self.cleaned_data['uuid'])
         return user.activate(self.cleaned_data['token'])
 
-class UserDeletionForm(forms.Form):
+class UserDeletionForm(forms.ModelForm):
     email = forms.EmailField(
         widget=forms.TextInput(attrs={'autofocus': True}),
         max_length=254,
@@ -64,47 +64,12 @@ class UserDeletionForm(forms.Form):
         'inactive': _("This account is inactive."),
     }
 
-    def __init__(self, *args, **kwargs):
-        self.user_cache = None
-        super().__init__(*args, **kwargs)
-        self.email_field = User._meta.get_field(User.USERNAME_FIELD)
-        if self.fields['email'].label is None:
-            self.fields['email'].label = capfirst(self.email_field.verbose_name)
-
-    def clean(self):
-        email = self.cleaned_data.get('email')
-        password = self.cleaned_data.get('password')
-        if email is not None and password:
-            user = User.objects.get(email=email)
-            self.user_cache = user if user.check_password(password) else None
-            if self.user_cache is None:
-                raise self.get_invalid_login_error()
-            else:
-                self.confirm_login_allowed(self.user_cache)
-        return self.cleaned_data
-
-    def confirm_login_allowed(self, user):
-        if not user.is_active:
-            raise ValidationError(
-                self.error_messages['inactive'],
-                code='inactive',
-            )
-
-    def get_user(self):
-        if not self.user_cache:
-            self.clean()
-        return self.user_cache
-
-    def get_invalid_login_error(self):
-        return ValidationError(
-            self.error_messages['invalid_authentication'],
-            code='invalid_authentication',
-            params={'email': self.email_field.verbose_name},
-        )
-    
     def save(self):
-        user = self.get_user()
-        return user.delete()[0] != 0
+        return self.instance.delete()[0] != 0
+
+    class Meta:
+        model = User
+        fields = []
 
 class ProfessionalCreationForm(forms.ModelForm):
     error_messages = {

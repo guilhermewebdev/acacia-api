@@ -103,13 +103,25 @@ class UserActivation(DjangoFormMutation):
     class Meta:
         form_class = forms.UserActivationForm
 
-class UserDeletion(DjangoFormMutation):
+class UserDeletion(DjangoModelFormMutation):
     deleted = graphene.Field(graphene.Boolean, required=True)
 
     @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
     def perform_mutate(cls, form, info):
-        form.clean()
-        return cls(errors=[], password='', email='', deleted=form.save())
+        return cls(deleted=form.save(), errors=[])
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user
+        }
+
     class Meta:
         form_class = forms.UserDeletionForm
 
