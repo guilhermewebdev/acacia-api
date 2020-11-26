@@ -64,6 +64,16 @@ class UserDeletionForm(forms.ModelForm):
         'inactive': _("This account is inactive."),
     }
 
+    def clean_password(self):
+        if not self.instance.check_password(self.cleaned_data.get('password')):
+            raise ValidationError(self.error_messages['invalid_login'])
+        return self.cleaned_data.get('password')
+
+    def clean_email(self):
+        if not self.instance.email == self.cleaned_data.get('email'):
+            raise ValidationError(_('Invalid email'))
+        return self.cleaned_data['email']
+
     def save(self):
         return self.instance.delete()[0] != 0
 
