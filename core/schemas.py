@@ -181,6 +181,9 @@ class ProfessionalDeletion(DjangoFormMutation):
         form_class = forms.ProfessionalDeletionForm
 
 
+class PasswordChange(DjangoModelFormMutation):
+    pass
+
 class Mutation(object):
     create_user = UserCreation.Field()
     update_user = UserUpdate.Field()

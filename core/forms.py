@@ -10,6 +10,15 @@ from .models import User, Professional, validate_cpf
 from django.utils.translation import gettext as _
 import re
 
+
+ERROR_MESSAGES = {
+    'invalid_login': _(
+        "Please enter a correct %(email)s and password. Note that both "
+        "fields may be case-sensitive."
+    ),
+    'inactive': _("This account is inactive."),
+    'password_mismatch': _('The two password fields didn’t match.'),
+}
 class UserCreationForm(UCF):
     class Meta:
         model = User
@@ -56,17 +65,10 @@ class UserDeletionForm(forms.ModelForm):
         widget=forms.PasswordInput(attrs={'autocomplete': 'current-password'}),
     )
 
-    error_messages = {
-        'invalid_login': _(
-            "Please enter a correct %(email)s and password. Note that both "
-            "fields may be case-sensitive."
-        ),
-        'inactive': _("This account is inactive."),
-    }
 
     def clean_password(self):
         if not self.instance.check_password(self.cleaned_data.get('password')):
-            raise ValidationError(self.error_messages['invalid_login'])
+            raise ValidationError(ERROR_MESSAGES['invalid_login'])
         return self.cleaned_data.get('password')
 
     def clean_email(self):
@@ -82,9 +84,6 @@ class UserDeletionForm(forms.ModelForm):
         fields = []
 
 class ProfessionalCreationForm(forms.ModelForm):
-    error_messages = {
-        'password_mismatch': _('The two password fields didn’t match.'),
-    }
     full_name = forms.CharField(
         max_length=200,
         required=True,
@@ -108,7 +107,7 @@ class ProfessionalCreationForm(forms.ModelForm):
         password2 = self.cleaned_data.get("password2")
         if password1 and password2 and password1 != password2:
             raise ValidationError(
-                self.error_messages['password_mismatch'],
+                ERROR_MESSAGES['password_mismatch'],
                 code='password_mismatch',
             )
         return password2
@@ -199,3 +198,35 @@ class ProfessionalDeletionForm(forms.ModelForm):
     class Meta:
         model = Professional
         fields = []
+
+class PasswordChangeForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label=_("Password"),
+        strip=False,
+    )
+    password2 = forms.CharField(
+        label=_("Password confirmation"),
+        strip=False,
+        help_text=_("Enter the same password as before, for verification."),
+    )
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise ValidationError(
+                ERROR_MESSAGES['password_mismatch'],
+                code='password_mismatch',
+            )
+        return password2
+
+    def clean_password(self):
+        if not self.instance.check_password(self.cleaned_data.get('password')):
+            raise ValidationError(ERROR_MESSAGES['invalid_login'])
+        return self.cleaned_data.get('password')
+
+    class Meta:
+        model = User
+        fields = [
+            'password',
+        ]
