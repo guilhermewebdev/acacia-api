@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db.models import query
+from django.forms.models import model_to_dict
 from django.test import TestCase
 from .models import User, Professional, account_activation_token
 from graphql_jwt.testcases import JSONWebTokenTestCase
@@ -285,8 +286,38 @@ class LoginTest(JSONWebTokenTestCase):
                 'email': user.email
             }
         })
-        print(result)
         self.assert_(result['data']['deleteUser']['deleted'])
+
+class ProfessionalTest(JSONWebTokenTestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='test@tst.com',
+            password='abda1234',
+            is_active=True,
+        )
+        self.client.authenticate(self.user)
+        self.professional = Professional.objects.create(
+            user=User.objects.create_user(
+                email='test@tstd.com',
+                password='abda1234',
+                is_active=True,
+            ),
+            state='My',
+            city='Belo Horizonte',
+            address='Centro',
+            zip_code='36200-000',
+            avg_price=99,
+            cpf="529.982.247-25",
+            rg='mg343402',
+            skills=['CI', 'AE', 'EM'],
+            occupation='CI',
+            coren='10.400'
+        )
+        self.professional.user.save()
+        self.professional.save()
+
+    def execute(self, query, variables):
+        return json.loads(json.dumps(self.client.execute(query, variables).to_dict(dict_class=dict)))
 
     def test_creation_professional(self):
         query = '''
@@ -317,7 +348,6 @@ class LoginTest(JSONWebTokenTestCase):
             }
         }
         result = self.execute(query, variables)
-        print(result)
         self.assertEqual(result, {
             'data': {
                 'createProfessional': {
@@ -326,6 +356,41 @@ class LoginTest(JSONWebTokenTestCase):
                             'fullName': variables['input']['fullName']
                         }
                     }
+                }
+            }
+        })
+
+    def test_professional_update(self):
+        self.client.authenticate(self.professional.user)
+        query = '''
+            mutation UpdateUser($input: ProfessionalUpdateInput!){
+                updateUser(input: $input){
+                    professional {
+                        user {
+                            fullName
+                        }
+                        state
+                    }
+                }
+            }
+        '''
+        professional_dict = model_to_dict(self.professional)
+        professional_dict.pop('user')
+        variables = {
+            'input': {
+                'state': 'RJ',
+                'zip_code': '45644-000',
+                **professional_dict,
+            }
+        }
+        result = self.execute(query, variables)
+        self.assertEqual(result, {
+            'data': {
+                'updateUser': {
+                    'user': {
+                        'fullName': self.professional.user.full_name
+                    },
+                    'state': 'RJ'
                 }
             }
         })

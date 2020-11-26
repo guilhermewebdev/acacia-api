@@ -53,6 +53,7 @@ class UserType(DjangoObjectType):
             'is_professional',
             'customer',
             'date_joined',
+            'professional',
         )
 
 class UserCreation(DjangoModelFormMutation):
@@ -111,9 +112,32 @@ class ProfessionalCreation(DjangoModelFormMutation):
     @classmethod
     def perform_mutate(cls, form, info):
         return cls(professional=form.save())
-    
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {"data": input}
+
     class Meta:
         form_class = forms.ProfessionalCreationForm
+        return_field_name = 'professional'
+
+class ProfessionalUpdate(DjangoModelFormMutation):
+    professional = graphene.Field(ProfessionalType)
+    
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user.professional
+        }
+    
+    class Meta:
+        form_class = forms.ProfessionalUpdateForm
         return_field_name = 'professional'
 
 class Mutation(object):
@@ -123,3 +147,4 @@ class Mutation(object):
     activate_user = UserActivation.Field()
     delete_user = UserDeletion.Field()
     create_professional = ProfessionalCreation.Field()
+    update_professional = ProfessionalUpdate.Field()

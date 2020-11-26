@@ -146,21 +146,23 @@ class ProfessionalCreationForm(forms.ModelForm):
         cleaned_data = super(ProfessionalCreationForm, self).clean()
         if(cleaned_data['password1'] == cleaned_data['password2']):
             cleaned_data.pop('password2')
-            self.user = User.objects.create_user(
-                email=cleaned_data.pop('email'),
-                password=cleaned_data.pop('password1'),
-                full_name=cleaned_data.pop('full_name'),
-            )
-            self.user.full_clean()
-            self.professional = Professional(**cleaned_data, user=self.user)
-            self.professional.full_clean()
+            if not self.instance.id:
+                self.instance.user = User.objects.create_user(
+                    email=cleaned_data.pop('email'),
+                    password=cleaned_data.pop('password1'),
+                    full_name=cleaned_data.pop('full_name'),
+                )
+                self.instance.user.full_clean()
+            for attr, value in cleaned_data.items():
+                setattr(self.instance, attr, value)
+            self.instance.full_clean()
         return self.cleaned_data
     
     def save(self):
-        self.user.save()
-        self.professional.save()
-        self.user.confirm_email()
-        return self.professional
+        self.instance.user.save()
+        self.instance.save()
+        self.instance.user.confirm_email()
+        return self.instance
     class Meta:
         model = Professional
         fields = (
@@ -172,4 +174,23 @@ class ProfessionalCreationForm(forms.ModelForm):
             "rg",
             "occupation",
             "coren",
+        )
+
+class ProfessionalUpdateForm(ProfessionalCreationForm):
+    password1 = None
+    password2 = None
+    class Meta:
+        model = Professional
+        fields = (
+            "state",
+            "city",
+            "address",
+            "zip_code",
+            "cpf",
+            "rg",
+            "occupation",
+            "coren",
+            "skills",
+            "avg_price",
+            "about",
         )
