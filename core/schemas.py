@@ -182,7 +182,22 @@ class ProfessionalDeletion(DjangoFormMutation):
 
 
 class PasswordChange(DjangoModelFormMutation):
-    pass
+    changed = graphene.Field(graphene.Boolean)
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user
+        }    
+    class Meta:
+        form_class = forms.PasswordChangeForm
+        return_field_name = 'changed'
 
 class Mutation(object):
     create_user = UserCreation.Field()
@@ -193,3 +208,4 @@ class Mutation(object):
     create_professional = ProfessionalCreation.Field()
     update_professional = ProfessionalUpdate.Field()
     delete_professional = ProfessionalDeletion.Field()
+    change_password = PasswordChange.Field()

@@ -225,6 +225,11 @@ class PasswordChangeForm(forms.ModelForm):
             raise ValidationError(ERROR_MESSAGES['invalid_login'])
         return self.cleaned_data.get('password')
 
+    def save(self):
+        self.instance.set_password(self.cleaned_data['password1'])
+        self.instance.save(update_fields=['password'])
+        return self.instance
+
     class Meta:
         model = User
         fields = [
