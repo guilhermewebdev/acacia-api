@@ -1,12 +1,48 @@
 import graphene
+from pagarme import recipient
 from . import forms, models
 from graphene_django import DjangoObjectType
 from graphene_django.forms.mutation import DjangoFormMutation, DjangoModelFormMutation
 from graphql_jwt.decorators import login_required
+from django.forms.models import model_to_dict
+
+class ProfessionalType(DjangoObjectType):
+    recipient = graphene.Field(graphene.JSONString)
+    avg_rating = graphene.Field(graphene.Int)
+    cash = graphene.Field(graphene.Float)
+    avg_price = graphene.Field(graphene.Float, required=False)
+
+    def resolve_user(parent, info):
+        return parent.user
+
+    class Meta:
+        model = models.Professional
+        fields = (
+            'user',
+            'about',
+            'avg_price',
+            'state',
+            'city',
+            'address',
+            'zip_code',
+            'cpf',
+            'rg',
+            'occupation',
+            'skills',
+            'coren',
+            'saved_in_pagarme',
+            'recipient',
+            'avg_rating',
+            'cash',
+        )
 
 class UserType(DjangoObjectType):
     is_professional = graphene.Field(graphene.Boolean)
     customer = graphene.Field(graphene.JSONString)
+    professional = graphene.Field(ProfessionalType, required=False)
+
+    def resolve_professional(parent, info):
+        return parent.professional or None
     class Meta:
         model = models.User
         fields = (
@@ -24,6 +60,7 @@ class UserType(DjangoObjectType):
             'is_professional',
             'customer',
             'date_joined',
+            'professional',
         )
 
 class UserCreation(DjangoModelFormMutation):
@@ -52,8 +89,10 @@ class UserUpdate(DjangoModelFormMutation):
         return_field_name = 'user'
 
 class PasswordReset(DjangoFormMutation):
+    sent = graphene.Boolean()
     class Meta:
         form_class = forms.PasswordResetForm
+        return_field_name = 'sent'
 
 class UserActivation(DjangoFormMutation):
     is_active = graphene.Field(graphene.Boolean, required=True)
@@ -64,15 +103,101 @@ class UserActivation(DjangoFormMutation):
     class Meta:
         form_class = forms.UserActivationForm
 
-class UserDeletion(DjangoFormMutation):
+class UserDeletion(DjangoModelFormMutation):
     deleted = graphene.Field(graphene.Boolean, required=True)
 
     @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
     def perform_mutate(cls, form, info):
-        form.clean()
-        return cls(errors=[], password='', email='', deleted=form.save())
+        return cls(deleted=form.save(), errors=[])
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user
+        }
+
     class Meta:
         form_class = forms.UserDeletionForm
+
+class ProfessionalCreation(DjangoModelFormMutation):
+    professional = graphene.Field(ProfessionalType)
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        return cls(professional=form.save())
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {"data": input}
+
+    class Meta:
+        form_class = forms.ProfessionalCreationForm
+        return_field_name = 'professional'
+
+class ProfessionalUpdate(DjangoModelFormMutation):
+    professional = graphene.Field(ProfessionalType)
+    
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user.professional
+        }
+
+    class Meta:
+        form_class = forms.ProfessionalUpdateForm
+        return_field_name = 'professional'
+
+class ProfessionalDeletion(DjangoFormMutation):
+    deleted = graphene.Field(graphene.Boolean)
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        return cls(deleted=form.save(), errors=[])        
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user.professional
+        }
+    class Meta:
+        form_class = forms.ProfessionalDeletionForm
+
+
+class PasswordChange(DjangoModelFormMutation):
+    changed = graphene.Field(graphene.Boolean)
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user
+        }    
+    class Meta:
+        form_class = forms.PasswordChangeForm
+        return_field_name = 'changed'
 
 class Mutation(object):
     create_user = UserCreation.Field()
@@ -80,3 +205,7 @@ class Mutation(object):
     reset_password = PasswordReset.Field()
     activate_user = UserActivation.Field()
     delete_user = UserDeletion.Field()
+    create_professional = ProfessionalCreation.Field()
+    update_professional = ProfessionalUpdate.Field()
+    delete_professional = ProfessionalDeletion.Field()
+    change_password = PasswordChange.Field()
