@@ -105,5 +105,4 @@ class UserDeletionForm(forms.Form):
     
     def save(self):
         user = self.get_user()
-        print(user)
         return user.delete()[0] != 0

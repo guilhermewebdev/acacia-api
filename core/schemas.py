@@ -3,6 +3,7 @@ from . import forms, models
 from graphene_django import DjangoObjectType
 from graphene_django.forms.mutation import DjangoFormMutation, DjangoModelFormMutation
 from graphql_jwt.decorators import login_required
+
 class UserType(DjangoObjectType):
     is_professional = graphene.Field(graphene.Boolean)
     customer = graphene.Field(graphene.JSONString)

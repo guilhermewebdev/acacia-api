@@ -285,5 +285,4 @@ class LoginTest(JSONWebTokenTestCase):
                 'email': user.email
             }
         })
-        print(result)
         self.assert_(result['data']['deleteUser']['deleted'])
