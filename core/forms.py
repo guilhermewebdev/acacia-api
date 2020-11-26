@@ -197,3 +197,30 @@ class ProfessionalUpdateForm(forms.ModelForm):
             "avg_price",
             "about",
         )
+
+class ProfessionalDeletionForm(forms.ModelForm):
+    email = forms.EmailField(
+        widget=forms.TextInput(attrs={'autofocus': True}),
+        max_length=254,
+    )
+    password = forms.CharField(
+        label=_("Password"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'current-password'}),
+    )
+
+    def clean_password(self):
+        if not self.instance.user.check_password(self.cleaned_data.get('password')):
+            raise ValidationError(_('The password fields didn’t match.'))
+        return self.cleaned_data.get('password')
+
+    def clean_email(self):
+        if not self.instance.user.email == self.cleaned_data.get('email'):
+            raise ValidationError(_('The email fields didn’t match.'))
+
+    def save(self):
+        return self.instance.delete()[0] != 0
+
+    class Meta:
+        model = Professional
+        fields = []

@@ -147,6 +147,28 @@ class ProfessionalUpdate(DjangoModelFormMutation):
         form_class = forms.ProfessionalUpdateForm
         return_field_name = 'professional'
 
+class ProfessionalDeletion(DjangoFormMutation):
+    deleted = graphene.Field(graphene.Boolean)
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        return cls(deleted=form.save(), errors=[])        
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        return {
+            "data": input,
+            "instance": info.context.user.professional
+        }
+    class Meta:
+        form_class = forms.ProfessionalDeletionForm
+
+
 class Mutation(object):
     create_user = UserCreation.Field()
     update_user = UserUpdate.Field()
@@ -155,3 +177,4 @@ class Mutation(object):
     delete_user = UserDeletion.Field()
     create_professional = ProfessionalCreation.Field()
     update_professional = ProfessionalUpdate.Field()
+    delete_professional = ProfessionalDeletion.Field()

@@ -396,3 +396,28 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 }
             }
         })
+
+    def test_professional_deletion(self):
+        self.client.authenticate(self.professional.user)
+        query = '''
+            mutation DeleteProfessional($input: ProfessionalDeletionInput!){
+                deleteProfessional(input: $input){
+                    deleted
+                }
+            }
+        '''
+        variables = {
+            'input': {
+                'email': self.professional.user.email,
+                'password': 'abda1234',
+            }
+        }
+        result = self.execute(query, variables)
+        print(result)
+        self.assertEqual(result, {
+            'data': {
+                'deleteProfessional': {
+                    'deleted': True,
+                }
+            }
+        })
