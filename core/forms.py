@@ -176,9 +176,12 @@ class ProfessionalCreationForm(forms.ModelForm):
             "coren",
         )
 
-class ProfessionalUpdateForm(ProfessionalCreationForm):
-    password1 = None
-    password2 = None
+class ProfessionalUpdateForm(forms.ModelForm):
+
+    def clean_cpf(self):
+        validate_cpf(self.cleaned_data.get('cpf'))
+        return re.sub('[^0-9]', '', self.cleaned_data.get('cpf'))
+
     class Meta:
         model = Professional
         fields = (

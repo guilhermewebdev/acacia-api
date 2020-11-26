@@ -301,8 +301,9 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 email='test@tstd.com',
                 password='abda1234',
                 is_active=True,
+                full_name='Bernardo Lagosta'
             ),
-            state='My',
+            state='MG',
             city='Belo Horizonte',
             address='Centro',
             zip_code='36200-000',
@@ -363,34 +364,35 @@ class ProfessionalTest(JSONWebTokenTestCase):
     def test_professional_update(self):
         self.client.authenticate(self.professional.user)
         query = '''
-            mutation UpdateUser($input: ProfessionalUpdateInput!){
-                updateUser(input: $input){
+            mutation UpdateProfessional($input: ProfessionalUpdateInput!){
+                updateProfessional(input: $input){
                     professional {
-                        user {
-                            fullName
-                        }
                         state
+                        zipCode
                     }
                 }
             }
         '''
-        professional_dict = model_to_dict(self.professional)
-        professional_dict.pop('user')
         variables = {
             'input': {
-                'state': 'RJ',
-                'zip_code': '45644-000',
-                **professional_dict,
+                'state': 'MG',
+                'city': 'Belo Horizonte',
+                'address': 'Any local',
+                'zipCode': '36200-000',
+                'rg': 'rj46565',
+                'occupation': 'CI',
+                'coren': '20.000',
+                'cpf': '661.034.190-77',
             }
         }
         result = self.execute(query, variables)
         self.assertEqual(result, {
             'data': {
-                'updateUser': {
-                    'user': {
-                        'fullName': self.professional.user.full_name
-                    },
-                    'state': 'RJ'
+                'updateProfessional': {
+                    'professional': {
+                        'state': variables['input']['state'],
+                        'zipCode': variables['input']['zipCode'],
+                    }
                 }
             }
         })

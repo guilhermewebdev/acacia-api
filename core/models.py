@@ -91,13 +91,6 @@ class MinOrNullValidator(object):
                 }
             )
 
-def invalid_cpf(value):
-    raise ValidationError(
-        '%(value) is not a valid CPF',
-        params={'value', value}
-    )
-
-
 def verify_sum(cpf, last_index):
     cut_cpf = cpf[0:last_index]
     cut_cpf.reverse()
@@ -120,7 +113,10 @@ def validate_cpf(value):
     first_sum = verify_sum(list_cpf, 9)
     second_sum = verify_sum(list_cpf, 10)
     if not (verify_rest(first_sum, list_cpf[9]) and verify_rest(second_sum, list_cpf[10])):
-        invalid_cpf(value)
+        raise ValidationError(
+            '%(value) is not a valid CPF',
+            params={'value', value}
+        )
 
 
 class UserManager(UM):

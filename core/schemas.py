@@ -12,6 +12,9 @@ class ProfessionalType(DjangoObjectType):
     cash = graphene.Field(graphene.Float)
     avg_price = graphene.Field(graphene.Float, required=False)
 
+    def resolve_user(parent, info):
+        return parent.user
+
     class Meta:
         model = models.Professional
         fields = (
@@ -36,6 +39,10 @@ class ProfessionalType(DjangoObjectType):
 class UserType(DjangoObjectType):
     is_professional = graphene.Field(graphene.Boolean)
     customer = graphene.Field(graphene.JSONString)
+    professional = graphene.Field(ProfessionalType, required=False)
+
+    def resolve_professional(parent, info):
+        return parent.professional or None
     class Meta:
         model = models.User
         fields = (
@@ -135,7 +142,7 @@ class ProfessionalUpdate(DjangoModelFormMutation):
             "data": input,
             "instance": info.context.user.professional
         }
-    
+
     class Meta:
         form_class = forms.ProfessionalUpdateForm
         return_field_name = 'professional'
