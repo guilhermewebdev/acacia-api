@@ -318,6 +318,8 @@ class LoginTest(JSONWebTokenTestCase):
                 }
             }
         })
+        user = User.objects.get(email=self.user.email)
+        self.assert_(user.check_password('xicotico'))
 
 
 class ProfessionalTest(JSONWebTokenTestCase):
