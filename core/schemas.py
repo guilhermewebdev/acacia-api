@@ -9,9 +9,11 @@ from django.utils.translation import gettext as _
 import datetime
 
 def get_week(date: str) -> int:
+    if not date: return None
     return datetime.datetime.strftime(date, "%Y-%m-%d").weekday()
 
 def get_day(date: str) -> int:
+    if not date: return None
     return datetime.datetime.strftime(date, "%Y-%m-%d").day
 
 class ProfessionalType(DjangoObjectType):
@@ -228,39 +230,46 @@ class FilterProfessionalInput(InputObjectType):
     end_time = graphene.Time()
 
 class Query(graphene.ObjectType):
-    professionals = graphene.List(ProfessionalType, filter=FilterProfessionalInput())
+    professionals = graphene.List(ProfessionalType, filters=FilterProfessionalInput())
 
-    def resolve_professional(root, info, **filter):
-        return models.Professional.objects.filter(
-            Q(
-                availabilities__start_time__gte=filter['start_time'],
-                availabilities__start_date__gte=filter['start_date'],
-                availabilities__end_time__lte=filter['end_time'],
-                availabilities__end_date__lte=filter['end_date'],
-                availabilities__recurrence__is_null=True,
-            ) |
-            Q(
-                availabilities__start_time__gte=filter['start_time'],
-                availabilities__end_time__lte=filter['end_time'],
-                availabilities__recurrence='D',
-            ) | 
-            Q(
-                availabilities__start_time__gte=filter['start_time'],
-                availabilities__start_date__iso_week_day=get_week(filter['start_date']),
-                availabilities__end_time__lte=filter['end_time'],
-                availabilities__end_date__iso_week_day=get_week(filter['end_date']),
-                availabilities__recurrence='W',
-            ) |
-            Q(
-                availabilities__start_time__gte=filter['start_time'],
-                availabilities__start_date__day=get_day(filter['start_date']),
-                availabilities__end_time__lte=filter['end_time'],
-                availabilities__end_date__day=get_day(filter['end_date']),
-                availabilities__recurrence='M',
-            ),
+    def resolve_professionals(root, info, **filters):
+        verify_dict = lambda dic: dict(filter(lambda item: item[1] != None and item[1] != [None], dic.items()))
+        filter_by_date = verify_dict(dict(
+            availabilities__start_time__gte=filters.get('start_time'),
+            availabilities__start_date__gte=filters.get('start_date'),
+            availabilities__end_time__lte=filters.get('end_time'),
+            availabilities__end_date__lte=filters.get('end_date'),
+            availabilities__recurrence__isnull=True,
+        ))
+        filter_by_time = verify_dict(dict(
+            availabilities__start_time__gte=filters.get('start_time'),
+            availabilities__end_time__lte=filters.get('end_time'),
+            availabilities__recurrence='D',
+        ))
+        filter_by_week_day = verify_dict(dict(
+            availabilities__start_time__gte=filters.get('start_time'),
+            availabilities__start_date__iso_week_day=get_week(filters.get('start_date')),
+            availabilities__end_time__lte=filters.get('end_time'),
+            availabilities__end_date__iso_week_day=get_week(filters.get('end_date')),
+            availabilities__recurrence='W',
+        ))
+        filter_by_day = verify_dict(dict(
+            availabilities__start_time__gte=filters.get('start_time'),
+            availabilities__start_date__day=get_day(filters.get('start_date')),
+            availabilities__end_time__lte=filters.get('end_time'),
+            availabilities__end_date__day=get_day(filters.get('end_date')),
+            availabilities__recurrence='M',
+        ))
+        filter_by_attrs = verify_dict(dict(
             user__is_active=True,
-            skills__overlap=[filter['skill']],
-            city__search=filter['city'],
-            state=filter['state'],
-            occupation=filter['occupation'],
+            skills__overlap=[filters.get('skill')],
+            city__search=filters.get('city'),
+            state=filters.get('state'),
+            occupation=filters.get('occupation'),
+        ))
+        print(filter_by_attrs, filter_by_day, filter_by_week_day, filter_by_time, filter_by_date)
+        return models.Professional.objects.filter(
+            Q(**filter_by_date) | Q(**filter_by_time) | 
+            Q(**filter_by_week_day) | Q(**filter_by_day),
+            **filter_by_attrs
         )

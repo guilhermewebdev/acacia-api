@@ -402,7 +402,6 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 updateProfessional(input: $input){
                     professional {
                         state
-                        zipCode
                     }
                 }
             }
@@ -425,7 +424,6 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 'updateProfessional': {
                     'professional': {
                         'state': variables['input']['state'],
-                        'zipCode': variables['input']['zipCode'],
                     }
                 }
             }
@@ -452,5 +450,25 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 'deleteProfessional': {
                     'deleted': True,
                 }
+            }
+        })
+
+    def test_list_professionals(self):
+        self.client.logout()
+        query = '''
+            {
+                professionals {
+                    coren
+                }
+            }
+        '''
+        result = self.execute(query, {})
+        self.assertEqual(result, {
+            'data': {
+                'professionals': [
+                    {
+                        'coren': self.professional.coren
+                    }
+                ]
             }
         })

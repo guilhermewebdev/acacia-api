@@ -7,7 +7,8 @@ def create_deleted_user(apps, schema_editor):
     Professional = apps.get_model('core', 'Professional')
     deleted_user = User(
         full_name='Deleted User',
-        email='deleted@user.com'
+        email='deleted@user.com',
+        is_active=False,
     )
     deleted_user.save()
     deleted_professional = Professional(
@@ -24,5 +25,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-         migrations.RunPython(create_deleted_user)
+        migrations.RunPython(create_deleted_user)
     ]
