@@ -2,7 +2,7 @@ from django.contrib.auth import login, logout
 import graphene
 import graphql_jwt
 from core import schemas as core
-class Mutation(graphene.ObjectType, core.Mutation):
+class Mutation(core.Mutation):
     login = graphql_jwt.ObtainJSONWebToken.Field()
     logout = graphql_jwt.DeleteJSONWebTokenCookie.Field()
     verify_token = graphql_jwt.Verify.Field()
@@ -10,7 +10,7 @@ class Mutation(graphene.ObjectType, core.Mutation):
     delete_refresh_token_cookie = graphql_jwt.DeleteRefreshTokenCookie.Field()
 
 
-class Query(graphene.ObjectType):
-    hello = graphene.String(default_value="Hi!")
+class Query(core.Query):
+    pass
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

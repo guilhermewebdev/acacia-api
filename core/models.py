@@ -309,8 +309,10 @@ class Availability(models.Model):
         ('SAT', 'Saturday'),
         ('SUN', 'Sunday'),
     )
-    start_datetime = models.DateTimeField()
-    end_datetime = models.DateTimeField()
+    start_date = models.DateField()
+    start_time = models.TimeField()
+    end_date = models.DateField()
+    end_time = models.TimeField()
     recurrence = models.CharField(
         choices=RECURRENCES,
         max_length=1,

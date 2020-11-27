@@ -153,7 +153,7 @@ class LoginTest(JSONWebTokenTestCase):
     def test_get_user(self):
         query = '''
             mutation Login($email: String!, $password: String!) {
-                tokenAuth(email: $email, password: $password) {
+                login(email: $email, password: $password) {
                     payload
                     refreshExpiresIn
                 }
@@ -166,7 +166,7 @@ class LoginTest(JSONWebTokenTestCase):
         }
 
         result = self.execute(query, variables)
-        assert result['data']['tokenAuth']['payload']['email'] == self.user.email
+        assert result['data']['login']['payload']['email'] == self.user.email
 
     def test_sign_up(self):
         query = '''

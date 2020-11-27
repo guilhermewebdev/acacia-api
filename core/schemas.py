@@ -1,10 +1,18 @@
+from django.db.models.query_utils import Q
 import graphene
-from pagarme import recipient
+from graphene.types.inputobjecttype import InputObjectType
 from . import forms, models
 from graphene_django import DjangoObjectType
 from graphene_django.forms.mutation import DjangoFormMutation, DjangoModelFormMutation
 from graphql_jwt.decorators import login_required
-from django.forms.models import model_to_dict
+from django.utils.translation import gettext as _
+import datetime
+
+def get_week(date: str) -> int:
+    return datetime.datetime.strftime(date, "%Y-%m-%d").weekday()
+
+def get_day(date: str) -> int:
+    return datetime.datetime.strftime(date, "%Y-%m-%d").day
 
 class ProfessionalType(DjangoObjectType):
     recipient = graphene.Field(graphene.JSONString)
@@ -15,6 +23,9 @@ class ProfessionalType(DjangoObjectType):
     def resolve_user(parent, info):
         return parent.user
 
+    def resolve_availabilities(parent, info):
+        return parent.availabilities.all()
+
     class Meta:
         model = models.Professional
         fields = (
@@ -23,17 +34,12 @@ class ProfessionalType(DjangoObjectType):
             'avg_price',
             'state',
             'city',
-            'address',
-            'zip_code',
-            'cpf',
-            'rg',
             'occupation',
             'skills',
             'coren',
-            'saved_in_pagarme',
             'recipient',
             'avg_rating',
-            'cash',
+            'availabilities',
         )
 
 class UserType(DjangoObjectType):
@@ -199,13 +205,62 @@ class PasswordChange(DjangoModelFormMutation):
         form_class = forms.PasswordChangeForm
         return_field_name = 'changed'
 
-class Mutation(object):
-    create_user = UserCreation.Field()
-    update_user = UserUpdate.Field()
-    reset_password = PasswordReset.Field()
-    activate_user = UserActivation.Field()
-    delete_user = UserDeletion.Field()
-    create_professional = ProfessionalCreation.Field()
-    update_professional = ProfessionalUpdate.Field()
-    delete_professional = ProfessionalDeletion.Field()
-    change_password = PasswordChange.Field()
+class Mutation(graphene.ObjectType):
+    create_user = UserCreation.Field(description=_('Create a new user client, it\'s need be unique'))
+    update_user = UserUpdate.Field(description=_('Update yourself user account, you need be authenticated'))
+    delete_user = UserDeletion.Field(description=_('Delete yourself account'))
+    create_professional = ProfessionalCreation.Field(description=_('Create a new professional account, it\'s need be unique'))
+    update_professional = ProfessionalUpdate.Field(description=_('Update yourself professional account, you need be authenticated'))
+    delete_professional = ProfessionalDeletion.Field(description=_('Delete yourself professional account'))
+    activate_user = UserActivation.Field(description=_('Check user email token, to activate your account'))
+    reset_password = PasswordReset.Field(description=_('If you lost the password, you can reset it here'))
+    change_password = PasswordChange.Field(description=_('Update youself password'))
+
+
+class FilterProfessionalInput(InputObjectType):
+    city = graphene.String()
+    state = graphene.String()
+    occupation = graphene.String()
+    skill = graphene.String()
+    start_date = graphene.Date()
+    start_time = graphene.Time()
+    end_date = graphene.Date()
+    end_time = graphene.Time()
+
+class Query(graphene.ObjectType):
+    professionals = graphene.List(ProfessionalType, filter=FilterProfessionalInput())
+
+    def resolve_professional(root, info, **filter):
+        return models.Professional.objects.filter(
+            Q(
+                availabilities__start_time__gte=filter['start_time'],
+                availabilities__start_date__gte=filter['start_date'],
+                availabilities__end_time__lte=filter['end_time'],
+                availabilities__end_date__lte=filter['end_date'],
+                availabilities__recurrence__is_null=True,
+            ) |
+            Q(
+                availabilities__start_time__gte=filter['start_time'],
+                availabilities__end_time__lte=filter['end_time'],
+                availabilities__recurrence='D',
+            ) | 
+            Q(
+                availabilities__start_time__gte=filter['start_time'],
+                availabilities__start_date__iso_week_day=get_week(filter['start_date']),
+                availabilities__end_time__lte=filter['end_time'],
+                availabilities__end_date__iso_week_day=get_week(filter['end_date']),
+                availabilities__recurrence='W',
+            ) |
+            Q(
+                availabilities__start_time__gte=filter['start_time'],
+                availabilities__start_date__day=get_day(filter['start_date']),
+                availabilities__end_time__lte=filter['end_time'],
+                availabilities__end_date__day=get_day(filter['end_date']),
+                availabilities__recurrence='M',
+            ),
+            user__is_active=True,
+            skills__overlap=[filter['skill']],
+            city__search=filter['city'],
+            state=filter['state'],
+            occupation=filter['occupation'],
+        )
