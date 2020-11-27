@@ -20,7 +20,7 @@ def get_day(date: str) -> int:
     return datetime.datetime.strftime(date, "%Y-%m-%d").day
 
 
-class ProfessionalType(DjangoObjectType):
+class PrivateProfessionalType(DjangoObjectType):
     recipient = graphene.Field(graphene.JSONString)
     avg_rating = graphene.Field(graphene.Int)
     cash = graphene.Field(graphene.Float)
@@ -48,10 +48,10 @@ class ProfessionalType(DjangoObjectType):
             'availabilities',
         )
 
-class UserType(DjangoObjectType):
+class PrivateUserType(DjangoObjectType):
     is_professional = graphene.Field(graphene.Boolean)
     customer = graphene.Field(graphene.JSONString)
-    professional = graphene.Field(ProfessionalType, required=False)
+    professional = graphene.Field(PrivateProfessionalType, required=False)
 
     def resolve_professional(parent, info):
         return parent.professional or None
@@ -76,15 +76,56 @@ class UserType(DjangoObjectType):
             'professional',
         )
 
+class PublicUserType(DjangoObjectType):
+    is_professional = graphene.Field(graphene.Boolean)
+
+    def resolve_professional(parent, info):
+        return parent.professional or None
+
+    class Meta:
+        model = models.User
+        fields = (
+            'full_name',
+            'uuid',
+            'email',
+            'avatar',
+            'date_joined',
+            'professional',
+            'is_active',
+        )
+
+
+class PublicProfessionalType(DjangoObjectType):
+    user = graphene.Field(PublicUserType)
+
+    def resolve_user(parent, info):
+        return parent.user
+
+    class Meta:
+        model = models.Professional
+        fields = (
+            'user',
+            'about',
+            'avg_price',
+            'state',
+            'city',
+            'occupation',
+            'skills',
+            'coren',
+            'recipient',
+            'avg_rating',
+            'availabilities',
+        )
+
 class UserCreation(DjangoModelFormMutation):
-    user = graphene.Field(UserType)
+    user = graphene.Field(PrivateUserType)
 
     class Meta:
         form_class = forms.UserCreationForm
         return_field_name = 'user'
 
 class UserUpdate(DjangoModelFormMutation):
-    user = graphene.Field(UserType)
+    user = graphene.Field(PrivateUserType)
 
     @classmethod
     @login_required
@@ -139,7 +180,7 @@ class UserDeletion(DjangoModelFormMutation):
         form_class = forms.UserDeletionForm
 
 class ProfessionalCreation(DjangoModelFormMutation):
-    professional = graphene.Field(ProfessionalType)
+    professional = graphene.Field(PrivateProfessionalType)
 
     @classmethod
     def perform_mutate(cls, form, info):
@@ -154,7 +195,7 @@ class ProfessionalCreation(DjangoModelFormMutation):
         return_field_name = 'professional'
 
 class ProfessionalUpdate(DjangoModelFormMutation):
-    professional = graphene.Field(ProfessionalType)
+    professional = graphene.Field(PrivateProfessionalType)
     
     @classmethod
     @login_required
@@ -237,7 +278,7 @@ class FilterProfessionalInput(InputObjectType):
 
 
 class ProfessionalPagination(PaginationType):
-    data = graphene.List(ProfessionalType, filters=FilterProfessionalInput())
+    data = graphene.List(PublicProfessionalType, filters=FilterProfessionalInput())
 
 
 class Query(graphene.ObjectType):
