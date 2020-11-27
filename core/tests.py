@@ -1,10 +1,9 @@
 from django.core.exceptions import ValidationError
-from django.db.models import query
-from django.forms.models import model_to_dict
 from django.test import TestCase
 from .models import User, Professional, account_activation_token
 from graphql_jwt.testcases import JSONWebTokenTestCase
 import json
+
 class TestUser(TestCase):
 
     def test_creation(self):
@@ -18,7 +17,7 @@ class TestUser(TestCase):
         user.save()
     
     def test_professional_creation(self):
-        user = User(
+        user = User.objects.create_user(
             email='teste1@teste.com',
             full_name='Linuz Torvalds',
             celphone='31988776655',
