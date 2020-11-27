@@ -153,7 +153,7 @@ class LoginTest(JSONWebTokenTestCase):
     def test_get_user(self):
         query = '''
             mutation Login($email: String!, $password: String!) {
-                tokenAuth(email: $email, password: $password) {
+                login(email: $email, password: $password) {
                     payload
                     refreshExpiresIn
                 }
@@ -166,7 +166,7 @@ class LoginTest(JSONWebTokenTestCase):
         }
 
         result = self.execute(query, variables)
-        assert result['data']['tokenAuth']['payload']['email'] == self.user.email
+        assert result['data']['login']['payload']['email'] == self.user.email
 
     def test_sign_up(self):
         query = '''
@@ -402,7 +402,6 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 updateProfessional(input: $input){
                     professional {
                         state
-                        zipCode
                     }
                 }
             }
@@ -425,7 +424,6 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 'updateProfessional': {
                     'professional': {
                         'state': variables['input']['state'],
-                        'zipCode': variables['input']['zipCode'],
                     }
                 }
             }
@@ -451,6 +449,59 @@ class ProfessionalTest(JSONWebTokenTestCase):
             'data': {
                 'deleteProfessional': {
                     'deleted': True,
+                }
+            }
+        })
+
+    def test_list_professionals(self):
+        self.client.logout()
+        query = '''
+            {
+                professionals {
+                    data {
+                        coren
+                    }
+                }
+            }
+        '''
+        result = self.execute(query, {})
+        self.assertEqual(result, {
+            'data': {
+                'professionals': {
+                    'data': [
+                        {
+                            'coren': self.professional.coren
+                        }
+                    ]
+                }
+            }
+        })
+
+    def test_filter_professional(self):
+        self.client.logout()
+        query = '''
+            query FindProfessionals($filters: FilterProfessionalInput){
+                professionals {
+                    data(filters: $filters) {
+                        coren
+                    }
+                }
+            }
+        '''
+        variables = {
+            'filters': {
+                'state': self.professional.state
+            }
+        }
+        result = self.execute(query, variables)
+        self.assertEqual(result, {
+            'data': {
+                'professionals': {
+                    'data': [
+                        {
+                            'coren': self.professional.coren
+                        }
+                    ]
                 }
             }
         })
