@@ -458,17 +458,21 @@ class ProfessionalTest(JSONWebTokenTestCase):
         query = '''
             {
                 professionals {
-                    coren
+                    data {
+                        coren
+                    }
                 }
             }
         '''
         result = self.execute(query, {})
         self.assertEqual(result, {
             'data': {
-                'professionals': [
-                    {
-                        'coren': self.professional.coren
-                    }
-                ]
+                'professionals': {
+                    'data': [
+                        {
+                            'coren': self.professional.coren
+                        }
+                    ]
+                }
             }
         })

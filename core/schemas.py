@@ -7,6 +7,7 @@ from graphene_django.forms.mutation import DjangoFormMutation, DjangoModelFormMu
 from graphql_jwt.decorators import login_required
 from django.utils.translation import gettext as _
 import datetime
+from django.core.paginator import Paginator
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -15,6 +16,40 @@ def get_week(date: str) -> int:
 def get_day(date: str) -> int:
     if not date: return None
     return datetime.datetime.strftime(date, "%Y-%m-%d").day
+
+
+class PaginationType(graphene.ObjectType):
+    page = graphene.Int()
+    pages = graphene.Int()
+    start_index = graphene.Int()
+    end_index = graphene.Int()
+    amount = graphene.Int()
+    has_next = graphene.Boolean()
+    has_previous = graphene.Boolean()
+    has_other_pages = graphene.Boolean()
+
+
+def pagination(ObjectType: PaginationType):
+    def paginator(function):
+        def resolver(root, info, offset:int=None, limit:int=None, *args, **kwargs):
+            if offset and limit:
+                pages = Paginator(function(root, info, *args, **kwargs), limit)
+                page = pages.page(offset)
+                return ObjectType(
+                    page=page.number,
+                    pages=pages.num_pages,
+                    start_index=page.start_index(),
+                    end_index=page.end_index(),
+                    amount=pages.count,
+                    has_next=page.has_next(),
+                    has_previous=page.has_previous(),
+                    has_other_pages=page.has_other_pages(),
+                    data=page.object_list
+                )
+            return ObjectType(data=function(root, info, *args, **kwargs))
+        return resolver
+    return paginator
+
 
 class ProfessionalType(DjangoObjectType):
     recipient = graphene.Field(graphene.JSONString)
@@ -51,6 +86,7 @@ class UserType(DjangoObjectType):
 
     def resolve_professional(parent, info):
         return parent.professional or None
+
     class Meta:
         model = models.User
         fields = (
@@ -229,9 +265,14 @@ class FilterProfessionalInput(InputObjectType):
     end_date = graphene.Date()
     end_time = graphene.Time()
 
-class Query(graphene.ObjectType):
-    professionals = graphene.List(ProfessionalType, filters=FilterProfessionalInput())
 
+class ProfessionalPagination(PaginationType):
+    data = graphene.List(ProfessionalType, filters=FilterProfessionalInput())
+
+class Query(graphene.ObjectType):
+    professionals = graphene.Field(ProfessionalPagination, offset=graphene.Int(), limit=graphene.Int())
+
+    @pagination(ProfessionalPagination)
     def resolve_professionals(root, info, **filters):
         verify_dict = lambda dic: dict(filter(lambda item: item[1] != None and item[1] != [None], dic.items()))
         filter_by_date = verify_dict(dict(
@@ -267,7 +308,6 @@ class Query(graphene.ObjectType):
             state=filters.get('state'),
             occupation=filters.get('occupation'),
         ))
-        print(filter_by_attrs, filter_by_day, filter_by_week_day, filter_by_time, filter_by_date)
         return models.Professional.objects.filter(
             Q(**filter_by_date) | Q(**filter_by_time) | 
             Q(**filter_by_week_day) | Q(**filter_by_day),
