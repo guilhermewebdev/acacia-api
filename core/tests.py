@@ -476,3 +476,32 @@ class ProfessionalTest(JSONWebTokenTestCase):
                 }
             }
         })
+
+    def test_filter_professional(self):
+        self.client.logout()
+        query = '''
+            query FindProfessionals($filters: FilterProfessionalInput){
+                professionals {
+                    data(filters: $filters) {
+                        coren
+                    }
+                }
+            }
+        '''
+        variables = {
+            'filters': {
+                'state': self.professional.state
+            }
+        }
+        result = self.execute(query, variables)
+        self.assertEqual(result, {
+            'data': {
+                'professionals': {
+                    'data': [
+                        {
+                            'coren': self.professional.coren
+                        }
+                    ]
+                }
+            }
+        })
