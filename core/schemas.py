@@ -8,6 +8,7 @@ from graphql_jwt.decorators import login_required
 from django.utils.translation import gettext as _
 import datetime
 from django.core.paginator import Paginator
+from django.contrib.postgres.search import SearchVector
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -264,6 +265,7 @@ class FilterProfessionalInput(InputObjectType):
     start_time = graphene.Time()
     end_date = graphene.Date()
     end_time = graphene.Time()
+    search = graphene.String()
 
 
 class ProfessionalPagination(PaginationType):
@@ -308,7 +310,9 @@ class Query(graphene.ObjectType):
             state=filters.get('state'),
             occupation=filters.get('occupation'),
         ))
-        return models.Professional.objects.filter(
+        return models.Professional.objects.annotate(
+                search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')
+            ).filter(
             Q(**filter_by_date) | Q(**filter_by_time) | 
             Q(**filter_by_week_day) | Q(**filter_by_day),
             **filter_by_attrs
