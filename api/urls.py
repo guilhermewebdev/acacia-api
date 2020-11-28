@@ -13,7 +13,6 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import path
 from financial.views import payment_postback
 from core.views import professional_postback
@@ -24,8 +23,7 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
-    path('api/', jwt_cookie(csrf_exempt(GraphQLView.as_view(graphiql=True)))),
- ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path('', jwt_cookie(csrf_exempt(GraphQLView.as_view(graphiql=settings.DEBUG))), name='GraphQL API'),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

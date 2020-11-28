@@ -78,7 +78,10 @@ class PrivateUserType(DjangoObjectType):
 
 class PublicUserType(DjangoObjectType):
     is_professional = graphene.Field(graphene.Boolean)
-
+    avg_rating = graphene.Field(graphene.Int)
+    cash = graphene.Field(graphene.Float)
+    avg_price = graphene.Field(graphene.Float, required=False)
+    
     def resolve_professional(parent, info):
         return parent.professional or None
 
