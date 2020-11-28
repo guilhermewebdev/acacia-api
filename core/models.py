@@ -76,13 +76,20 @@ class ValidateChoices(object):
                 '%(value) is not a valid option',
                 params={'value': value})
 
+@deconstructible
+class MinOrNullValidator(object):
+    def __init__(self, minimum):
+        self.min = minimum
 
-def invalid_cpf(value):
-    raise ValidationError(
-        '%(value) is not a valid CPF',
-        params={'value', value}
-    )
-
+    def __call__(self, value):
+        if value and value < self.min:
+            raise ValidationError(
+                '%(value) should be more than %(minimum)',
+                params={
+                    'value': value,
+                    'minimum': self.min
+                }
+            )
 
 def verify_sum(cpf, last_index):
     cut_cpf = cpf[0:last_index]
@@ -106,7 +113,10 @@ def validate_cpf(value):
     first_sum = verify_sum(list_cpf, 9)
     second_sum = verify_sum(list_cpf, 10)
     if not (verify_rest(first_sum, list_cpf[9]) and verify_rest(second_sum, list_cpf[10])):
-        invalid_cpf(value)
+        raise ValidationError(
+            '%(value) is not a valid CPF',
+            params={'value', value}
+        )
 
 
 class UserManager(UM):
@@ -188,6 +198,9 @@ class User(AbstractUser):
         blank=True,
     )
     saved_in_pagarme = models.BooleanField(
+        default=False
+    )
+    is_active = models.BooleanField(
         default=False
     )
     USERNAME_FIELD='email'
@@ -296,8 +309,10 @@ class Availability(models.Model):
         ('SAT', 'Saturday'),
         ('SUN', 'Sunday'),
     )
-    start_datetime = models.DateTimeField()
-    end_datetime = models.DateTimeField()
+    start_date = models.DateField()
+    start_time = models.TimeField()
+    end_date = models.DateField()
+    end_time = models.TimeField()
     recurrence = models.CharField(
         choices=RECURRENCES,
         max_length=1,
@@ -351,8 +366,10 @@ class Professional(models.Model):
     )
     avg_price = models.FloatField(
         verbose_name='Average Price',
-        validators=[MinValueValidator(65)],
+        validators=[MinOrNullValidator(65)],
         default=0,
+        blank=True,
+        null=True,
     )
     state = models.CharField(
         choices=STATES,

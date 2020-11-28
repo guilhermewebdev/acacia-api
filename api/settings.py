@@ -38,8 +38,6 @@ PAGARME_CRYPTO = os.environ.get('PAGARME_CRYPTO')
 
 CONFIRMATION_LINK = os.environ.get('CONFIRMATION_LINK')
 
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
-
 CASH_OUT_COMMISSION = float(os.environ.get('CASH_OUT_COMMISSION', 15))
 
 PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
@@ -47,6 +45,10 @@ PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
 # Application definition
 
 HOST = os.environ.get('HOST')
+
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
+
+CLIENT_DOMAIN = os.environ.get('CLIENT_DOMAIN')
 
 ALLOWED_HOSTS = [HOST]
 
@@ -75,6 +77,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'axes.middleware.AxesMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 ]
@@ -162,7 +165,6 @@ PASSWORD_HASHERS = [
 
 GRAPHQL_JWT = {
     'JWT_VERIFY_EXPIRATION': False,
-    'JWT_AUDIENCE': True,
     'JWT_HIDE_TOKEN_FIELDS': True,
     'JWT_CSRF_ROTATION': True,
     'JWT_COOKIE_SECURE': not DEBUG,
