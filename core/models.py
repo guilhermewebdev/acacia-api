@@ -11,7 +11,6 @@ from django.template.loader import render_to_string
 import re
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator as dtg
 from django.conf import settings
-from datetime import date, datetime
 from django.utils.timezone import now
 
 
