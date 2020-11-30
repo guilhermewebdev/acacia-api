@@ -1,8 +1,12 @@
+import json
+from django.core.serializers import serialize
 from django.http import JsonResponse
 from django.views.generic.base import View
 from django.views.generic.edit import FormView
 import graphene
 from django.core.paginator import Paginator
+from django.forms.models import model_to_dict
+
 
 class PaginationType(graphene.ObjectType):
     page = graphene.Int()
@@ -48,18 +52,20 @@ class JSONMixin:
         """
         return JsonResponse(
             self.get_data(context),
-            **response_kwargs
+            **response_kwargs,
+            safe=False,
         )
-
-    def get_data(self, context):
-        """
-        Returns an object that will be serialized as JSON by json.dumps().
-        """
-        # Note: This is *EXTREMELY* naive; in reality, you'll need
-        # to do much more complex handling to ensure that arbitrary
-        # objects -- such as Django model instances or querysets
-        # -- can be serialized as JSON.
-        return context
 
     def render_to_response(self, context, **response_kwargs):
         return self.render_to_json_response(context, **response_kwargs)
+
+
+class JSONList:
+
+    def get_data(self, context):
+        return json.loads(serialize('json', context.get('object_list')))
+
+class JSONItem:
+    
+    def get_data(self, context):
+        return model_to_dict(context.get('object'))

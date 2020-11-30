@@ -1,4 +1,4 @@
-from api.utils import JSONMixin
+from api.utils import JSONList, JSONMixin
 from django.http.response import JsonResponse
 from django.shortcuts import render
 from django.views.generic.list import ListView
@@ -9,7 +9,7 @@ from . import models
 def professional_postback(request, uuid):
     pass
 
-class ProfessionalList(JSONMixin, ListView):
+class ProfessionalList(JSONMixin, JSONList, ListView):
     model = models.Professional
 
     @property
