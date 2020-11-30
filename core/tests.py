@@ -1,8 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from .models import User, Professional, account_activation_token
+from .models import Availability, User, Professional, account_activation_token
 from graphql_jwt.testcases import JSONWebTokenTestCase
 import json
+from django.utils.timezone import now, timedelta
 
 class TestUser(TestCase):
 

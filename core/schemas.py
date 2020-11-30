@@ -1,3 +1,4 @@
+from core.models import Availability
 from django.db.models.query_utils import Q
 import graphene
 from graphene.types.inputobjecttype import InputObjectType
@@ -46,6 +47,19 @@ class PrivateProfessionalType(DjangoObjectType):
             'recipient',
             'avg_rating',
             'availabilities',
+        )
+
+class AvailabilityType(DjangoObjectType):
+
+    class Meta:
+        model = models.Availability
+        fields = (
+            'start_datetime',
+            'end_datetime',
+            'recurrence',
+            'weekly_recurrence',
+            'registration_date',
+            'professional'
         )
 
 class PrivateUserType(DjangoObjectType):
@@ -100,6 +114,7 @@ class PublicUserType(DjangoObjectType):
 
 class PublicProfessionalType(DjangoObjectType):
     user = graphene.Field(PublicUserType)
+    avg_rating = graphene.Field(graphene.Int)
 
     def resolve_user(parent, info):
         return parent.user
@@ -115,7 +130,6 @@ class PublicProfessionalType(DjangoObjectType):
             'occupation',
             'skills',
             'coren',
-            'recipient',
             'avg_rating',
             'availabilities',
         )
@@ -256,14 +270,44 @@ class PasswordChange(DjangoModelFormMutation):
         form_class = forms.PasswordChangeForm
         return_field_name = 'changed'
 
+class AvailabilityMutation(DjangoFormMutation):
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, input):
+        return super().mutate(root, info, input)
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        kwargs = {}
+        if 'uuid' in input:
+            instance = Availability.objects.get(uuid=input.pop('uuid'))
+            if instance.professional == info.context.user.professional:
+                kwargs.update({
+                    'instance': instance
+                })
+        kwargs.update({'data': input})
+        return kwargs
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        form.instance.professional = info.context.user.professional
+        form.save()
+        print(form.instance, form.cleaned_data)
+        return super().perform_mutate(form, info)
+
+    class Meta:
+        form_class = forms.AvailabilityForm
+        return_field_name = 'availability'
+
 class Mutation(graphene.ObjectType):
     create_user = UserCreation.Field(description=_('Create a new user client, it\'s need be unique'))
-    update_user = UserUpdate.Field(description=_('Update yourself user account, you need be authenticated'))
-    delete_user = UserDeletion.Field(description=_('Delete yourself account'))
     create_professional = ProfessionalCreation.Field(description=_('Create a new professional account, it\'s need be unique'))
+    update_user = UserUpdate.Field(description=_('Update yourself user account, you need be authenticated'))
     update_professional = ProfessionalUpdate.Field(description=_('Update yourself professional account, you need be authenticated'))
-    delete_professional = ProfessionalDeletion.Field(description=_('Delete yourself professional account'))
     activate_user = UserActivation.Field(description=_('Check user email token, to activate your account'))
+    delete_user = UserDeletion.Field(description=_('Delete yourself account'))
+    delete_professional = ProfessionalDeletion.Field(description=_('Delete yourself professional account'))
     reset_password = PasswordReset.Field(description=_('If you lost the password, you can reset it here'))
     change_password = PasswordChange.Field(description=_('Update youself password'))
 
@@ -291,29 +335,29 @@ class Query(graphene.ObjectType):
     def resolve_professionals(root, info, **filters):
         verify_dict = lambda dic: dict(filter(lambda item: item[1] != None and item[1] != [None], dic.items()))
         filter_by_date = verify_dict(dict(
-            availabilities__start_time__gte=filters.get('start_time'),
-            availabilities__start_date__gte=filters.get('start_date'),
-            availabilities__end_time__lte=filters.get('end_time'),
-            availabilities__end_date__lte=filters.get('end_date'),
+            availabilities__start_datetime__time__gte=filters.get('start_time'),
+            availabilities__start_datetime__date__gte=filters.get('start_date'),
+            availabilities__end_datetime__time__lte=filters.get('end_time'),
+            availabilities__end_datetime_date__lte=filters.get('end_date'),
             availabilities__recurrence__isnull=True,
         ))
         filter_by_time = verify_dict(dict(
-            availabilities__start_time__gte=filters.get('start_time'),
-            availabilities__end_time__lte=filters.get('end_time'),
+            availabilities__start_datetime__time__gte=filters.get('start_time'),
+            availabilities__end_datetime__time__lte=filters.get('end_time'),
             availabilities__recurrence='D',
         ))
         filter_by_week_day = verify_dict(dict(
-            availabilities__start_time__gte=filters.get('start_time'),
-            availabilities__start_date__iso_week_day=get_week(filters.get('start_date')),
-            availabilities__end_time__lte=filters.get('end_time'),
-            availabilities__end_date__iso_week_day=get_week(filters.get('end_date')),
+            availabilities__start_datetime__time__gte=filters.get('start_time'),
+            availabilities__start_datetime__date__iso_week_day=get_week(filters.get('start_date')),
+            availabilities__end_datetime__time__lte=filters.get('end_time'),
+            availabilities__end_datetime_date__iso_week_day=get_week(filters.get('end_date')),
             availabilities__recurrence='W',
         ))
         filter_by_day = verify_dict(dict(
-            availabilities__start_time__gte=filters.get('start_time'),
-            availabilities__start_date__day=get_day(filters.get('start_date')),
-            availabilities__end_time__lte=filters.get('end_time'),
-            availabilities__end_date__day=get_day(filters.get('end_date')),
+            availabilities__start_datetime__time__gte=filters.get('start_time'),
+            availabilities__start_datetime__date__day=get_day(filters.get('start_date')),
+            availabilities__end_datetime__time__lte=filters.get('end_time'),
+            availabilities__end_datetime_date__day=get_day(filters.get('end_date')),
             availabilities__recurrence='M',
         ))
         filter_by_attrs = verify_dict(dict(

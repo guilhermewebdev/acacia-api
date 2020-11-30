@@ -11,6 +11,9 @@ from django.template.loader import render_to_string
 import re
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator as dtg
 from django.conf import settings
+from datetime import date, datetime
+from django.utils.timezone import now
+
 
 class TokenGenerator(PasswordResetTokenGenerator):
     def _make_hash_value(self, user, timestamp):
@@ -309,10 +312,13 @@ class Availability(models.Model):
         ('SAT', 'Saturday'),
         ('SUN', 'Sunday'),
     )
-    start_date = models.DateField()
-    start_time = models.TimeField()
-    end_date = models.DateField()
-    end_time = models.TimeField()
+    uuid = models.UUIDField(
+        unique=True,
+        editable=False,
+        default=uuid.uuid4
+    )
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
     recurrence = models.CharField(
         choices=RECURRENCES,
         max_length=1,
@@ -339,7 +345,7 @@ class Availability(models.Model):
     )
 
     def validate_start(self):
-        if self.start_datetime < self.registration_date:
+        if self.start_datetime < now():
             raise ValidationError('The start date has passed')
 
     def validate_end(self):
