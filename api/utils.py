@@ -60,12 +60,12 @@ class JSONMixin:
         return self.render_to_json_response(context, **response_kwargs)
 
 
-class JSONList:
+class JSONList(JSONMixin):
 
     def get_data(self, context):
         return json.loads(serialize('json', context.get('object_list')))
 
-class JSONItem:
+class JSONItem(JSONMixin):
     
     def get_data(self, context):
-        return model_to_dict(context.get('object'))
+        return json.loads(model_to_dict(context.get('object')))
