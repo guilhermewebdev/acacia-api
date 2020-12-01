@@ -16,9 +16,6 @@ Including another URLconf
 from django.urls import path, include
 from financial.views import payment_postback
 from core.views import professional_postback
-from graphene_django.views import GraphQLView
-from django.views.decorators.csrf import csrf_exempt
-from graphql_jwt.decorators import jwt_cookie
 from django.conf.urls.static import static
 from django.conf import settings
 from core.routes import router as core
@@ -28,5 +25,4 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
-    path('', jwt_cookie(csrf_exempt(GraphQLView.as_view(graphiql=settings.DEBUG))), name='GraphQL API'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
