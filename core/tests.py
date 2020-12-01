@@ -159,3 +159,22 @@ class ProfessionalTestREST(TestCase):
             'avg_rating': self.professional.avg_rating,
             'availabilities': [],
         }])
+
+    def test_create_professional(self):
+        data = {
+            'state': 'MG',
+            'city':   'Belo Horizonte',
+            'occupation': 'CI',
+            'password1': 'acac333',
+            'password2': 'acac333',
+            'full_name': 'Pindamonhagaba da Silva',
+            'email': 'dudu@google.com',
+            'cpf': '567.933.940-45',
+            'rg': 'rj343534',
+            'address': 'Lá mesmo',
+            'zip_code': '33000-334',
+            'coren': 39.999
+        }
+        response = self.client.post('/professionals/', data)
+        self.assert_('user' in response.json())
+        self.assert_('uuid' in response.json()['user'])

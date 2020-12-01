@@ -82,6 +82,7 @@ class Professionals(viewsets.ModelViewSet):
     def create(self, request):
         form = forms.ProfessionalCreationForm(data=request.data)
         if form.is_valid():
-            form.save()
-            return Response(form.cleaned_data)
+            professional = form.save()
+            serializer = self.serializer_class(professional, many=False)
+            return Response(serializer.data)
         return Response(form.errors)
