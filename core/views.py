@@ -1,5 +1,5 @@
 from django.db.models.query_utils import Q
-from . import models, serializers
+from . import models, serializers, forms
 import datetime
 from rest_framework import viewsets
 from django.contrib.postgres.search import SearchVector
@@ -78,3 +78,10 @@ class Professionals(viewsets.ModelViewSet):
         )
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
+
+    def create(self, request):
+        form = forms.ProfessionalCreationForm(data=request.data)
+        if form.is_valid():
+            form.save()
+            return Response(form.cleaned_data)
+        return Response(form.errors)
