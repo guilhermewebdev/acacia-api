@@ -1,11 +1,10 @@
 from django.db.models.query_utils import Q
-from api.utils import JSONList
-from django.views.generic.list import ListView
-from . import models
+from . import models, serializers
 import datetime
+from rest_framework import viewsets
 from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
-
+from rest_framework.response import Response
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -18,14 +17,16 @@ def get_day(date: str) -> int:
 def professional_postback(request, uuid):
     pass
 
-class ProfessionalList(JSONList, ListView):
+class Professionals(viewsets.ModelViewSet):
     model = models.Professional
+    serializer_class = serializers.PublicProfessionalSerializer
+    queryset = models.Professional.objects.all()
 
     @property
     def paginated_by(self):
         return int(self.request.GET.get('limit', [10])[0])
 
-    def get_queryset(self):
+    def list(self, request):
         verify_dict = lambda dic: dict(filter(lambda item: item[1] != None and item[1] != [None], dic.items()))
         filters = {
             **self.request.GET,
@@ -68,10 +69,12 @@ class ProfessionalList(JSONList, ListView):
             state=list(filters.get('state', [None]))[0],
             occupation=list(filters.get('occupation', [None]))[0],
         ))
-        return models.Professional.objects.annotate(
+        queryset = self.queryset.annotate(
                 search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')
             ).filter(
             Q(**filter_by_date) | Q(**filter_by_time) | 
             Q(**filter_by_week_day) | Q(**filter_by_day),
             **filter_by_attrs
         )
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)

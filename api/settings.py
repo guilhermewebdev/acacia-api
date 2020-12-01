@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'chat',
     'financial',
     'graphene_django',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -99,6 +100,11 @@ TEMPLATES = [
         },
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
 
 WSGI_APPLICATION = 'api.wsgi.application'
 

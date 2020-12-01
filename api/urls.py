@@ -21,10 +21,11 @@ from django.views.decorators.csrf import csrf_exempt
 from graphql_jwt.decorators import jwt_cookie
 from django.conf.urls.static import static
 from django.conf import settings
-from core import views as core
+from core.routes import router as core
 
 urlpatterns = [
-    path('professionals/', core.ProfessionalList.as_view()),
+    path('', include(core.urls)),
+    path('api-auth/', include('rest_framework.urls')),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
     path('', jwt_cookie(csrf_exempt(GraphQLView.as_view(graphiql=settings.DEBUG))), name='GraphQL API'),
