@@ -22,6 +22,7 @@ services:
             HOST: localhost
             CLIENT_DOMAIN: localhost
             DEBUG: 1
+            SENDER_EMAIL: teste@teste.com
 
     db:
         image: postgres

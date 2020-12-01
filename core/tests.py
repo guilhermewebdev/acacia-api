@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from .models import User, Professional, account_activation_token
@@ -110,6 +111,15 @@ class TestUser(TestCase):
             coren='10.400'
         )
         self.assertRaises(ValidationError, professional.full_clean)
+
+    def test_confirmation_email(self):
+        user = User.objects.create_user(
+            email='test@tst.com',
+            password='abda1234',
+        )
+        user.save()
+        self.assertNotEqual(settings.SENDER_EMAIL, None)
+        self.assert_(user.confirm_email())
 
 class ProfessionalTestREST(TestCase):
     
