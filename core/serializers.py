@@ -27,6 +27,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.Professional
         fields = (
+            'uuid',
             'user',
             'about',
             'avg_price',

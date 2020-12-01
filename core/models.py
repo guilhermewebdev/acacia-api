@@ -358,6 +358,11 @@ class Availability(models.Model):
         return super(Availability, self).full_clean(*args, **kwargs)
 
 class Professional(models.Model):
+    uuid = models.UUIDField(
+        unique=True,
+        editable=False,
+        default=uuid.uuid4
+    )
     user = models.OneToOneField(
         User,
         related_name='professional',

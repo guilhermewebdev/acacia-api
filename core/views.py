@@ -88,7 +88,7 @@ class Professionals(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response(form.errors)
 
-    def retrieve(self, request, uuid=None):
-        professional = get_object_or_404(self.queryset, uuid=uuid)
+    def retrieve(self, request, pk=None):
+        professional = get_object_or_404(self.queryset, uuid=pk)
         serializer = self.serializer_class(professional)
         return Response(serializer.data)    
