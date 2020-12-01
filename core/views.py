@@ -1,10 +1,6 @@
 from django.db.models.query_utils import Q
-from api.utils import JSONList, JSONMixin
-from django.http.response import JsonResponse
-from django.shortcuts import render
+from api.utils import JSONList
 from django.views.generic.list import ListView
-from django.views.generic.base import View
-from django.views.generic.edit import FormMixin
 from . import models
 import datetime
 from django.contrib.postgres.search import SearchVector
@@ -27,19 +23,18 @@ class ProfessionalList(JSONList, ListView):
 
     @property
     def paginated_by(self):
-        return int(self.request.GET.get('limit', 10))
+        return int(self.request.GET.get('limit', [10])[0])
 
     def get_queryset(self):
         verify_dict = lambda dic: dict(filter(lambda item: item[1] != None and item[1] != [None], dic.items()))
-        print(self.request.GET)
         filters = {
             **self.request.GET,
             'start_time': parse_time(self.request.GET.get('start_time', '')),
             'start_date': parse_date(self.request.GET.get('start_date', '')),
             'end_time': parse_time(self.request.GET.get('end_time', '')),
             'end_date': parse_date(self.request.GET.get('end_date', '')),
+            'skills': self.request.GET.get('skills'),
         }
-        print(filters)
         filter_by_date = verify_dict(dict(
             availabilities__start_datetime__time__gte=filters.get('start_time'),
             availabilities__start_datetime__date__gte=filters.get('start_date'),
@@ -68,10 +63,10 @@ class ProfessionalList(JSONList, ListView):
         ))
         filter_by_attrs = verify_dict(dict(
             user__is_active=True,
-            skills__overlap=[filters.get('skill')],
-            city__search=filters.get('city'),
-            state=filters.get('state'),
-            occupation=filters.get('occupation'),
+            skills__overlap=filters.get('skills'),
+            city__search=list(filters.get('city', [None]))[0],
+            state=list(filters.get('state', [None]))[0],
+            occupation=list(filters.get('occupation', [None]))[0],
         ))
         return models.Professional.objects.annotate(
                 search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')

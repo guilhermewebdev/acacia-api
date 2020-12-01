@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.http import response
 from django.test import TestCase
 from .models import Availability, User, Professional, account_activation_token
 from graphql_jwt.testcases import JSONWebTokenTestCase
@@ -503,5 +504,50 @@ class ProfessionalTest(JSONWebTokenTestCase):
                         }
                     ]
                 }
+            }
+        })
+
+class ProfessionalTestREST(TestCase):
+    
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='test@tst.com',
+            password='abda1234',
+            is_active=True,
+        )
+        self.professional = Professional.objects.create(
+            user=User.objects.create_user(
+                email='test@tstd.com',
+                password='abda1234',
+                is_active=True,
+                full_name='Bernardo Lagosta'
+            ),
+            state='MG',
+            city='Belo Horizonte',
+            address='Centro',
+            zip_code='36200-000',
+            avg_price=99,
+            cpf="529.982.247-25",
+            rg='mg343402',
+            skills=['CI', 'AE', 'EM'],
+            occupation='CI',
+            coren='10.400'
+        )
+        self.professional.user.save()
+        self.professional.save()
+
+    def test_list_professionals(self):
+        response = self.client.get('/professionals/')
+        print(response.json())
+        self.assertEqual(response.json(), {
+            'state': 'MG',
+            'city': self.professional.city,
+            'address': self.professional.address,
+            'zip_code': self.professional.zip_code,
+            'avg_price': self.professional.avg_price,
+            'skills': self.professional.skills,
+            'occupation': self.professional.occupation,
+            'user': {
+                'full_name': self.professional.user.full_name,
             }
         })

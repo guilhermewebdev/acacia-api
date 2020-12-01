@@ -10,3 +10,6 @@ django[argon2]
 argon2
 argon2-cffi
 django[bcrypt]
+djangorestframework
+markdown
+django-filter
