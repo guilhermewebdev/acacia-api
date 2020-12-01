@@ -539,15 +539,20 @@ class ProfessionalTestREST(TestCase):
     def test_list_professionals(self):
         response = self.client.get('/professionals/')
         print(response.json())
-        self.assertEqual(response.json(), {
-            'state': 'MG',
-            'city': self.professional.city,
-            'address': self.professional.address,
-            'zip_code': self.professional.zip_code,
-            'avg_price': self.professional.avg_price,
-            'skills': self.professional.skills,
-            'occupation': self.professional.occupation,
+        self.assertEqual(response.json(), [{
             'user': {
                 'full_name': self.professional.user.full_name,
-            }
-        })
+                'uuid': str(self.professional.user.uuid),
+                'email': self.professional.user.email,
+                'avatar': None,
+                'is_active': self.professional.user.is_active,
+            },
+            'about': self.professional.about,
+            'avg_price': self.professional.avg_price,
+            'state': 'MG',
+            'city': self.professional.city,
+            'occupation': self.professional.occupation,
+            'skills': self.professional.skills,
+            'avg_rating': self.professional.avg_rating,
+            'availabilities': [],
+        }])

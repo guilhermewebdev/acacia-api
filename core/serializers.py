@@ -9,7 +9,6 @@ class PublicUserSerializer(serializers.ModelSerializer):
             'uuid',
             'email',
             'avatar',
-            'date_joined',
             'is_active',
         )
 
@@ -26,7 +25,6 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'city',
             'occupation',
             'skills',
-            'coren',
             'avg_rating',
             'availabilities',
         )
