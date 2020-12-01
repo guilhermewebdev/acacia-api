@@ -5,6 +5,7 @@ from rest_framework import viewsets
 from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -20,7 +21,7 @@ def professional_postback(request, uuid):
 class Professionals(viewsets.ModelViewSet):
     model = models.Professional
     serializer_class = serializers.PublicProfessionalSerializer
-    queryset = models.Professional.objects.all()
+    queryset = models.Professional.objects.filter(user__is_active=True).all()
 
     @property
     def paginated_by(self):
@@ -86,3 +87,8 @@ class Professionals(viewsets.ModelViewSet):
             serializer = self.serializer_class(professional, many=False)
             return Response(serializer.data)
         return Response(form.errors)
+
+    def retrieve(self, request, uuid=None):
+        professional = get_object_or_404(self.queryset, uuid=uuid)
+        serializer = self.serializer_class(professional)
+        return Response(serializer.data)    

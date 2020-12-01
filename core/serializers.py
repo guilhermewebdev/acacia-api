@@ -20,6 +20,9 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     password2 = serializers.CharField(write_only=True)
     cpf = serializers.CharField(write_only=True)
     rg = serializers.CharField(write_only=True)
+    address = serializers.CharField(write_only=True)
+    zip_code = serializers.CharField(write_only=True)
+    coren = serializers.CharField(write_only=True)
 
     class Meta:
         model = models.Professional
@@ -38,7 +41,10 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'full_name',
             'email',
             'cpf',
-            'rg'
+            'rg',
+            'address',
+            'zip_code',
+            'coren',
         )
         read_only_fields = (
             'about',
