@@ -54,3 +54,24 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'avg_rating',
             'availabilities',
         )
+
+class PrivateUserSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = models.User
+        fields = (
+            'uuid',
+            'full_name',
+            'email',
+            'born',
+            'avatar',
+            'cellphone_ddd',
+            'cellphone',
+            'telephone_ddd',
+            'telephone',
+            'saved_in_pagarme',
+            'is_active',
+            'is_professional',
+            'customer',
+            'professional',
+        )
