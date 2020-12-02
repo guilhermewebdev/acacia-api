@@ -44,7 +44,7 @@ PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
 
 # Application definition
 
-HOST = os.environ.get('HOST')
+HOST = os.environ.get('HOST', 'localhost')
 
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
 
@@ -53,6 +53,16 @@ CLIENT_DOMAIN = os.environ.get('CLIENT_DOMAIN')
 ALLOWED_HOSTS = [HOST]
 
 AXES_ENABLED = not DEBUG
+
+EMAIL_HOST = os.environ.get('EMAIL_HOST', HOST)
+
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+
+EMAIL_PORT = os.environ.get('EMAIL_PORT', 587)
+
+EMAIL_USE_TLS = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',

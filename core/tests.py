@@ -152,6 +152,7 @@ class ProfessionalTestREST(TestCase):
 
     def test_list_professionals(self):
         response = self.client.get('/professionals/')
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [{
             'uuid': str(self.professional.uuid),
             'user': {
@@ -187,11 +188,13 @@ class ProfessionalTestREST(TestCase):
             'coren': 39.999
         }
         response = self.client.post('/professionals/', data)
+        self.assertEqual(response.status_code, 200)
         self.assert_('user' in response.json())
         self.assert_('uuid' in response.json()['user'])
 
     def test_retrieve_professional(self):
         response = self.client.get(f'/professionals/{self.professional.uuid}/')
         data = response.json()
+        self.assertEqual(response.status_code, 200)
         self.assertIn('uuid', data)
         self.assertEqual(data['occupation'], self.professional.occupation)

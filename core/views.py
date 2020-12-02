@@ -22,6 +22,7 @@ class Professionals(viewsets.ModelViewSet):
     model = models.Professional
     serializer_class = serializers.PublicProfessionalSerializer
     queryset = models.Professional.objects.filter(user__is_active=True).all()
+    lookup_field = 'uuid'
 
     @property
     def paginated_by(self):
@@ -88,7 +89,9 @@ class Professionals(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response(form.errors)
 
-    def retrieve(self, request, pk=None):
-        professional = get_object_or_404(self.queryset, uuid=pk)
+    def retrieve(self, request, uuid=None):
+        professional = get_object_or_404(self.queryset, uuid=uuid)
         serializer = self.serializer_class(professional)
         return Response(serializer.data)    
+
+
