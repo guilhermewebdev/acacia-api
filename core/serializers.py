@@ -55,8 +55,44 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'availabilities',
         )
 
+
+class PrivateProfessionalSerializer(serializers.ModelSerializer):
+    cash = serializers.FloatField(read_only=True)
+    avg_rating = serializers.IntegerField(read_only=True)
+    recipient = serializers.JSONField(read_only=True)
+
+    class Meta:
+        model = models.User
+        fields = (
+            'uuid',
+            'about',
+            'avg_price',
+            'state',
+            'city',
+            'address',
+            'zip_code',
+            'cpf',
+            'rg',
+            'occupation',
+            'skills',
+            'coren',
+            'saved_in_pagarme',
+            'recipient',
+            'avg_rating',
+            'cash',
+        )
+        read_only_fields = (
+            'cash',
+            'avg_rating',
+            'recipient',
+            'uuid',
+        )
+
 class PrivateUserSerializer(serializers.ModelSerializer):
-    
+    professional = PrivateProfessionalSerializer(many=False, read_only=False)
+    is_professional = serializers.BooleanField(read_only=True)    
+    costumer = serializers.JSONField(read_only=True)
+
     class Meta:
         model = models.User
         fields = (
@@ -74,4 +110,11 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             'is_professional',
             'customer',
             'professional',
+        )
+        read_only_fields = (
+            'is_active',
+            'is_professional',
+            'costumer',
+            'uuid',
+            'saved_in_pagarme',
         )
