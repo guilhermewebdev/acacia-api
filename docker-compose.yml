@@ -21,6 +21,8 @@ services:
             SECRET_KEY: fj2l4jl2j4l324jl34
             HOST: localhost
             CLIENT_DOMAIN: localhost
+            DEBUG: 1
+            SENDER_EMAIL: teste@teste.com
 
     db:
         image: postgres

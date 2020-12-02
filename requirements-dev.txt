@@ -4,9 +4,10 @@ Pillow
 django-axes
 uvicorn
 pagarme-python
-graphene-django
-django-graphql-jwt
 django[argon2]
 argon2
 argon2-cffi
 django[bcrypt]
+djangorestframework
+markdown
+django-filter

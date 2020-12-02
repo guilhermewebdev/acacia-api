@@ -6,7 +6,7 @@ from django.contrib.auth.forms import (
 )
 from django.core.exceptions import ValidationError
 from django.utils.text import capfirst
-from .models import User, Professional, validate_cpf
+from .models import Availability, User, Professional, validate_cpf
 from django.utils.translation import gettext as _
 import re
 
@@ -235,4 +235,16 @@ class PasswordChangeForm(forms.ModelForm):
         model = User
         fields = [
             'password',
+        ]
+
+class AvailabilityForm(forms.ModelForm):
+    uuid = forms.UUIDField(required=False)
+
+    class Meta:
+        model = Availability
+        fields = [
+            'start_datetime',
+            'end_datetime',
+            'recurrence',
+            'weekly_recurrence',
         ]
