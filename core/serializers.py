@@ -45,7 +45,6 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'occupation',
             'skills',
             'avg_rating',
-            'availabilities',
             'password1',
             'password2',
             'full_name',

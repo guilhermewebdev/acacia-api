@@ -167,7 +167,6 @@ class ProfessionalTestREST(TestCase):
             'occupation': self.professional.occupation,
             'skills': self.professional.skills,
             'avg_rating': self.professional.avg_rating,
-            'availabilities': [],
             'url': f'http://testserver/professionals/{str(self.professional.uuid)}/'
         }])
 
@@ -206,7 +205,7 @@ class ProfessionalTestREST(TestCase):
         )
         availability.save()
         response = self.client.get(
-            f'/professionals/{str(self.professional.uuid)}/availabilities.json'
+            f'/professionals/{str(self.professional.uuid)}/availabilities.json',
         )
         json = response.json()
         self.assertEqual(json[0].get('uuid'), str(availability.uuid))

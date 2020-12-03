@@ -5,7 +5,7 @@ from rest_framework import viewsets
 from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
@@ -96,12 +96,6 @@ class Professionals(viewsets.ModelViewSet):
         serializer = self.serializer_class(instance=professional, context={'request': request})
         return Response(serializer.data )
 
-    @action(methods=['get'], detail=True)
-    def availabilities(self, request, uuid=None, *args, **kwargs):
-        professional = models.Professional.objects.get(uuid=uuid)
-        serializer = serializers.AvailabilitiesSerializer(professional.availabilities, many=True)
-        return Response(serializer.data)
-
 
 class Users(viewsets.ViewSet):
     model = models.User
@@ -165,3 +159,19 @@ class Users(viewsets.ViewSet):
             serializer = self.serializer_class(instance=form.save())
             return Response(data=serializer.data)
         return Response(data=form.errors, status=400, exception=form.error_class())
+
+
+class Availabilities(viewsets.ViewSet):
+    lookup_field = 'uuid'
+
+    def list(self, request, professional_uuid=None, *args, **kwargs):
+        availabilities = models.Availability.objects.filter(
+            professional__uuid=professional_uuid,
+            professional__user__is_active=True
+        ).all()
+        serializer = serializers.AvailabilitiesSerializer(
+            availabilities, many=True,
+        )
+        return Response(serializer.data)
+
+    
