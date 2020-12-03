@@ -100,7 +100,7 @@ class Professionals(viewsets.ModelViewSet):
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
-    auth_actions = ('profile', 'update')
+    auth_actions = ('profile', 'update', 'profile_update', 'profile_delete')
 
     @property
     def serializer_class(self):
@@ -118,14 +118,21 @@ class Users(viewsets.ViewSet):
         serializer = self.serializer_class(instance=request.user, many=False)
         return Response(data=serializer.data)
 
-    @action(methods=['put'], detail=False)
-    def profile(self, request, *args, **kwargs):
+    @profile.mapping.put
+    def profile_update(self, request, *args, **kwargs):
         form = forms.UserChangeForm(data=request.data)
         if form.is_valid():
             form.save()
             serializer = self.serializer_class(instance=form.instance)
             return Response(data=serializer.data)
         return Response(exception=form.errors, status=400)
+
+    @profile.mapping.delete
+    def profile_delete(self, request, *args, **kwargs):
+        form = forms.UserDeletionForm(data=request.data, instance=request.user)
+        if form.is_valid():
+            return Response(data={'deleted': form.save()})
+        return Response(data=form.errors, status=400)
 
     def create(self, request, *args, **kwargs):
         form = forms.UserCreationForm(data=request.data)

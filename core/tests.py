@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from rest_framework import response
 from .models import User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
 
@@ -248,3 +249,24 @@ class TestUserREST(TestCase):
         json = response.json()
         self.assertIn('uuid', json)
         self.assertEqual(json['is_active'], False)
+
+    def test_user_deletion(self):
+        user = User.objects.create_user(
+            email='tes3t@tst.com',
+            password='abda1234',
+            is_active=True,
+        )
+        user.save()
+        data = {
+            'email': user.email,
+            'password': 'abda1234'
+        }
+        self.client.login(username=user.email, password='abda1234')
+        response = self.client.delete(
+            '/users/profile.json',
+            data=data,
+            content_type='application/json'
+        )
+        self.assertEqual(response.json(), {
+            'deleted': True
+        })
