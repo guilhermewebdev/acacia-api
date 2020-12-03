@@ -89,7 +89,7 @@ class Professionals(viewsets.ModelViewSet):
             professional = form.save()
             serializer = self.serializer_class(professional, many=False)
             return Response(serializer.data)
-        return Response(form.errors)
+        return Response(form.errors, status=400)
 
     def retrieve(self, request, uuid=None):
         professional = get_object_or_404(self.queryset, uuid=uuid)
@@ -118,10 +118,19 @@ class Users(viewsets.ViewSet):
         serializer = self.serializer_class(instance=request.user, many=False)
         return Response(data=serializer.data)
 
+    @action(methods=['put'], detail=False)
+    def profile(self, request, *args, **kwargs):
+        form = forms.UserChangeForm(data=request.data)
+        if form.is_valid():
+            form.save()
+            serializer = self.serializer_class(instance=form.instance)
+            return Response(data=serializer.data)
+        return Response(exception=form.errors, status=400)
+
     def create(self, request, *args, **kwargs):
         form = forms.UserCreationForm(data=request.data)
         if form.is_valid():
             form.save()
             serializer = self.serializer_class(instance=form.instance)
             return Response(serializer.data)
-        return Response(form.errors)
+        return Response(form.errors, status=400)
