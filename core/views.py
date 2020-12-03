@@ -6,6 +6,8 @@ from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -95,3 +97,13 @@ class Professionals(viewsets.ModelViewSet):
         return Response(serializer.data)    
 
 
+class Users(viewsets.ViewSet):
+    model = models.User
+    serializer_class = serializers.PrivateUserSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'uuid'
+
+    @action(methods=['get'], detail=False)
+    def profile(self, request, uuid=None):
+        serializer = self.serializer_class(instance=request.user, many=False)
+        return Response(data=serializer.data)
