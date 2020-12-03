@@ -198,3 +198,40 @@ class ProfessionalTestREST(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('uuid', data)
         self.assertEqual(data['occupation'], self.professional.occupation)
+
+
+class TestUserREST(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='test@tst.com',
+            password='abda1234',
+            is_active=True,
+        )
+        self.professional = Professional.objects.create(
+            user=User.objects.create_user(
+                email='test@tstd.com',
+                password='abda1234',
+                is_active=True,
+                full_name='Bernardo Lagosta'
+            ),
+            state='MG',
+            city='Belo Horizonte',
+            address='Centro',
+            zip_code='36200-000',
+            avg_price=99,
+            cpf="529.982.247-25",
+            rg='mg343402',
+            skills=['CI', 'AE', 'EM'],
+            occupation='CI',
+            coren='10.400'
+        )
+        self.professional.user.save()
+        self.professional.save()
+    
+    def test_get_profile(self):
+        self.client.login(username=self.user.email, password='abda1234')
+        response = self.client.get('/users/profile.json')
+        data = response.json()
+        self.assertIn('uuid', data)
+        self.assertEqual(data['uuid'], str(self.user.uuid))

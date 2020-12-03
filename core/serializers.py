@@ -88,6 +88,7 @@ class PrivateProfessionalSerializer(serializers.ModelSerializer):
             'avg_rating',
             'recipient',
             'uuid',
+            'saved_in_pagarme',
         )
         lookup_field = 'uuid'
 

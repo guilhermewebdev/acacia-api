@@ -100,15 +100,19 @@ class Professionals(viewsets.ModelViewSet):
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
-    serializer_class = serializers.PrivateUserSerializer
+    auth_actions = ('profile', 'update')
+
+    @property
+    def serializer_class(self):
+        return serializers.PrivateUserSerializer
 
     def get_permissions(self):
-        if not self.action == 'create':
+        if self.action in self.auth_actions:
             return (IsAuthenticated(),)
         return super(Users, self).get_permissions()
 
     @action(methods=['get'], detail=False)
-    def profile(self, request, uuid=None):
+    def profile(self, request, uuid=None, *args, **kwargs):
         serializer = self.serializer_class(instance=request.user, many=False)
         return Response(data=serializer.data)
 
