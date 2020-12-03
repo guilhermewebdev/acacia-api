@@ -1,6 +1,18 @@
 from rest_framework import serializers
 from . import models
 
+class Availabilities(serializers.HyperlinkedModelSerializer):
+
+    class Meta:
+        model = models.Availability
+        fields = (
+            'start_datetime',
+            'end_datetime',
+            'recurrence',
+            'weekly_recurrence',
+            'registration_date',
+        )
+
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     full_name = serializers.CharField(source='user.full_name', max_length=200)
     email = serializers.EmailField(source='user.email')
