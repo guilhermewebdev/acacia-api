@@ -270,3 +270,20 @@ class TestUserREST(TestCase):
         self.assertEqual(response.json(), {
             'deleted': True
         })
+
+    def test_change_password(self):
+        self.client.logout()
+        self.client.login(username=self.user.email, password='abda1234')
+        data = {
+            'password': 'abda1234',
+            'password1': 'abda143501',
+            'password2': 'abda143501',
+        }
+        response = self.client.patch(
+            '/users/profile.json',
+            data=data,
+            content_type='application/json'
+        )
+        json = response.json()
+        self.assertIn('uuid', json)
+        self.assertEqual(response.status_code, 200)

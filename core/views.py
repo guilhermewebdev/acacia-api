@@ -80,27 +80,27 @@ class Professionals(viewsets.ModelViewSet):
             Q(**filter_by_week_day) | Q(**filter_by_day),
             **filter_by_attrs
         )
-        serializer = self.serializer_class(queryset, many=True)
+        serializer = self.serializer_class(queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
     def create(self, request):
         form = forms.ProfessionalCreationForm(data=request.data)
         if form.is_valid():
             professional = form.save()
-            serializer = self.serializer_class(professional, many=False)
+            serializer = self.serializer_class(professional, many=False, context={'request': request})
             return Response(serializer.data)
-        return Response(form.errors, status=400)
+        return Response(exception=form.errors, status=400)
 
     def retrieve(self, request, uuid=None):
         professional = get_object_or_404(self.queryset, uuid=uuid)
-        serializer = self.serializer_class(professional)
-        return Response(serializer.data)    
+        serializer = self.serializer_class(professional, context={'request': request})
+        return Response(serializer.data )
 
 
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
-    auth_actions = ('profile', 'update', 'profile_update', 'profile_delete')
+    auth_actions = ('profile', 'update', 'profile_update', 'profile_delete', 'change_password')
 
     @property
     def serializer_class(self):
@@ -132,7 +132,15 @@ class Users(viewsets.ViewSet):
         form = forms.UserDeletionForm(data=request.data, instance=request.user)
         if form.is_valid():
             return Response(data={'deleted': form.save()})
-        return Response(data=form.errors, status=400)
+        return Response(exception=form.errors, status=400)
+
+    @profile.mapping.patch
+    def change_password(self, request, *args, **kwargs):
+        form = forms.PasswordChangeForm(data=request.data, instance=request.user)
+        if form.is_valid():
+            serializer = self.serializer_class(instance=form.instance)
+            return Response(data=serializer.data)
+        return Response(data=form.errors, exception=form.error_class, status=400)
 
     def create(self, request, *args, **kwargs):
         form = forms.UserCreationForm(data=request.data)
@@ -140,4 +148,4 @@ class Users(viewsets.ViewSet):
             form.save()
             serializer = self.serializer_class(instance=form.instance)
             return Response(serializer.data)
-        return Response(form.errors, status=400)
+        return Response(exception=form.errors, status=400)
