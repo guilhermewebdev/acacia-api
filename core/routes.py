@@ -4,3 +4,4 @@ from . import views
 router = routers.DefaultRouter()
 
 router.register(r'professionals', views.Professionals)
+router.register(r'users', views.Users, basename='User')

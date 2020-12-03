@@ -177,13 +177,13 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
-    celphone_ddd = models.CharField(
+    cellphone_ddd = models.CharField(
         max_length=2,
         null=True,
         blank=True,
         validators=[RegexValidator('^[0-9]{2}$')]
     )
-    celphone = models.CharField(
+    cellphone = models.CharField(
         max_length=11,
         null=True,
         blank=True,
@@ -475,8 +475,8 @@ class Professional(models.Model):
                         "type": "phone"
                     },
                     {
-                        "ddd": self.user.celphone_ddd,
-                        "number": f'{self.user.celphone_ddd}{self.user.celphone}',
+                        "ddd": self.user.cellphone_ddd,
+                        "number": f'{self.user.cellphone_ddd}{self.user.cellphone}',
                         "type": "mobile"
                     }
                 ]

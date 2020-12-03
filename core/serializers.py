@@ -1,21 +1,11 @@
 from rest_framework import serializers
 from . import models
 
-class PublicUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.User
-        fields = (
-            'full_name',
-            'uuid',
-            'email',
-            'avatar',
-            'is_active',
-        )
-
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
-    user = PublicUserSerializer(many=False, read_only=True)
-    full_name = serializers.CharField(max_length=200, write_only=True)
-    email = serializers.EmailField(write_only=True)
+    full_name = serializers.CharField(source='user.full_name', max_length=200)
+    email = serializers.EmailField(source='user.email')
+    avatar = serializers.ImageField(source='user.avatar', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
     cpf = serializers.CharField(write_only=True)
@@ -23,13 +13,20 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     address = serializers.CharField(write_only=True)
     zip_code = serializers.CharField(write_only=True)
     coren = serializers.CharField(write_only=True)
+    url = serializers.SerializerMethodField('get_url')
 
+    def get_url(self, obj):
+        request = self.context['request']
+        http = "https://" if request.is_secure() else "http://"
+        return f'{http}{request.get_host()}/professionals/{obj.uuid}/'
+    
     class Meta:
         model = models.Professional
         fields = (
             'uuid',
-            'user',
             'about',
+            'is_active',
+            'avatar',
             'avg_price',
             'state',
             'city',
@@ -46,6 +43,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'address',
             'zip_code',
             'coren',
+            'url',
         )
         read_only_fields = (
             'about',
@@ -53,4 +51,93 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'skills',
             'avg_rating',
             'availabilities',
+            'is_active',
+        )
+        lookup_field = 'uuid'
+
+
+class PrivateProfessionalSerializer(serializers.ModelSerializer):
+    cash = serializers.FloatField(read_only=True)
+    avg_rating = serializers.IntegerField(read_only=True)
+    recipient = serializers.JSONField(read_only=True)
+
+    class Meta:
+        model = models.Professional
+        fields = (
+            'uuid',
+            'about',
+            'avg_price',
+            'state',
+            'city',
+            'address',
+            'zip_code',
+            'cpf',
+            'rg',
+            'occupation',
+            'skills',
+            'coren',
+            'saved_in_pagarme',
+            'recipient',
+            'avg_rating',
+            'cash',
+        )
+        read_only_fields = (
+            'cash',
+            'avg_rating',
+            'recipient',
+            'uuid',
+            'saved_in_pagarme',
+        )
+        lookup_field = 'uuid'
+
+class PrivateUserSerializer(serializers.ModelSerializer):
+    professional = PrivateProfessionalSerializer(many=False, read_only=False)
+    is_professional = serializers.BooleanField(read_only=True)    
+    costumer = serializers.JSONField(read_only=True)
+
+    class Meta:
+        model = models.User
+        fields = (
+            'uuid',
+            'full_name',
+            'email',
+            'born',
+            'avatar',
+            'cellphone_ddd',
+            'cellphone',
+            'telephone_ddd',
+            'telephone',
+            'saved_in_pagarme',
+            'is_active',
+            'is_professional',
+            'customer',
+            'professional',
+            'costumer',
+        )
+        read_only_fields = (
+            'is_active',
+            'is_professional',
+            'costumer',
+            'uuid',
+            'saved_in_pagarme',
+        )
+        lookup_field = 'uuid'
+
+class CreationUserSerializer(serializers.ModelSerializer):
+    password1 = serializers.CharField(write_only=True, required=True)
+    password2 = serializers.CharField(write_only=True, required=True)
+
+    class Meta:
+        model = models.User
+        fields = (
+            'uuid',
+            'password1',
+            'password2',
+            'full_name',
+            'email',
+            'is_active',
+        )
+        read_only_fields = (
+            'is_active',
+            'uuid',
         )
