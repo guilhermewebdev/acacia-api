@@ -150,7 +150,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesBackend',
-    'graphql_jwt.backends.JSONWebTokenBackend',
     'api.backends.EmailBackend',
 ]
 
