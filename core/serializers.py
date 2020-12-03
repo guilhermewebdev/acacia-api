@@ -64,7 +64,7 @@ class PrivateProfessionalSerializer(serializers.ModelSerializer):
     recipient = serializers.JSONField(read_only=True)
 
     class Meta:
-        model = models.User
+        model = models.Professional
         fields = (
             'uuid',
             'about',

@@ -30,7 +30,7 @@ class Professionals(viewsets.ModelViewSet):
     def paginated_by(self):
         return int(self.request.GET.get('limit', [10])[0])
 
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
         verify_dict = lambda dic: dict(filter(lambda item: item[1] != None and item[1] != [None], dic.items()))
         filters = {
             **self.request.GET,
@@ -99,14 +99,23 @@ class Professionals(viewsets.ModelViewSet):
 
 class Users(viewsets.ViewSet):
     model = models.User
-    permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'
+    serializer_class = serializers.PrivateUserSerializer
 
-    @property
-    def serializer_class(self):
-        return serializers.PrivateUserSerializer
+    def get_permissions(self):
+        if not self.action == 'create':
+            return (IsAuthenticated(),)
+        return super(Users, self).get_permissions()
 
     @action(methods=['get'], detail=False)
     def profile(self, request, uuid=None):
         serializer = self.serializer_class(instance=request.user, many=False)
         return Response(data=serializer.data)
+
+    def create(self, request):
+        form = forms.UserCreationForm(data=request.data)
+        if form.is_valid():
+            form.save()
+            serializer = self.serializer_class(data=form.instance)
+            return Response(serializer.data)
+        return Response(form.errors)
