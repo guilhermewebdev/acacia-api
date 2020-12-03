@@ -124,3 +124,22 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             'saved_in_pagarme',
         )
         lookup_field = 'uuid'
+
+class CreationUserSerializer(serializers.ModelSerializer):
+    password1 = serializers.CharField(write_only=True, required=True)
+    password2 = serializers.CharField(write_only=True, required=True)
+
+    class Meta:
+        model = models.User
+        fields = (
+            'uuid',
+            'password1',
+            'password2',
+            'full_name',
+            'email',
+            'is_active',
+        )
+        read_only_fields = (
+            'is_active',
+            'uuid',
+        )

@@ -104,7 +104,9 @@ class Users(viewsets.ViewSet):
 
     @property
     def serializer_class(self):
-        return serializers.PrivateUserSerializer
+        if self.action in self.auth_actions:
+            return serializers.PrivateUserSerializer
+        return serializers.CreationUserSerializer
 
     def get_permissions(self):
         if self.action in self.auth_actions:
