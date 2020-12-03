@@ -47,6 +47,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'address',
             'zip_code',
             'coren',
+            'url',
         )
         read_only_fields = (
             'about',
