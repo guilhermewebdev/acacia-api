@@ -87,13 +87,13 @@ class Professionals(viewsets.ModelViewSet):
         form = forms.ProfessionalCreationForm(data=request.data)
         if form.is_valid():
             professional = form.save()
-            serializer = self.serializer_class(professional, many=False, context={'request': request})
+            serializer = self.serializer_class(instance=professional, many=False, context={'request': request})
             return Response(serializer.data)
         return Response(exception=form.errors, status=400)
 
     def retrieve(self, request, uuid=None):
         professional = get_object_or_404(self.queryset, uuid=uuid)
-        serializer = self.serializer_class(professional, context={'request': request})
+        serializer = self.serializer_class(instance=professional, context={'request': request})
         return Response(serializer.data )
 
 

@@ -1,22 +1,11 @@
 from rest_framework import serializers
 from . import models
 
-class PublicUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.User
-        fields = (
-            'full_name',
-            'uuid',
-            'email',
-            'avatar',
-            'is_active',
-        )
-        lookup_field = 'uuid'
-
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
-    user = PublicUserSerializer(many=False, read_only=True)
-    full_name = serializers.CharField(max_length=200, write_only=True)
-    email = serializers.EmailField(write_only=True)
+    full_name = serializers.CharField(source='user.full_name', max_length=200)
+    email = serializers.EmailField(source='user.email')
+    avatar = serializers.ImageField(source='user.avatar', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
     cpf = serializers.CharField(write_only=True)
@@ -24,13 +13,20 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     address = serializers.CharField(write_only=True)
     zip_code = serializers.CharField(write_only=True)
     coren = serializers.CharField(write_only=True)
+    url = serializers.SerializerMethodField('get_url')
 
+    def get_url(self, obj):
+        request = self.context['request']
+        http = "https://" if request.is_secure() else "http://"
+        return f'{http}{request.get_host()}/professionals/{obj.uuid}/'
+    
     class Meta:
         model = models.Professional
         fields = (
             'uuid',
-            'user',
             'about',
+            'is_active',
+            'avatar',
             'avg_price',
             'state',
             'city',
@@ -55,6 +51,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'skills',
             'avg_rating',
             'availabilities',
+            'is_active',
         )
         lookup_field = 'uuid'
 

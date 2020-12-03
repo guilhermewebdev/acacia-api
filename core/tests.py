@@ -152,25 +152,23 @@ class ProfessionalTestREST(TestCase):
         self.professional.save()
 
     def test_list_professionals(self):
-        response = self.client.get('/professionals/')
+        response = self.client.get('/professionals.json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [{
             'uuid': str(self.professional.uuid),
-            'user': {
-                'full_name': self.professional.user.full_name,
-                'uuid': str(self.professional.user.uuid),
-                'email': self.professional.user.email,
-                'avatar': None,
-                'is_active': self.professional.user.is_active,
-            },
             'about': self.professional.about,
-            'avg_price': self.professional.avg_price,
+            'full_name': self.professional.user.full_name,
+            'email': self.professional.user.email,
+            'avatar': None,
+            'is_active': self.professional.user.is_active,
+            'avg_price': float(self.professional.avg_price),
             'state': 'MG',
             'city': self.professional.city,
             'occupation': self.professional.occupation,
             'skills': self.professional.skills,
             'avg_rating': self.professional.avg_rating,
             'availabilities': [],
+            'url': f'http://testserver/professionals/{str(self.professional.uuid)}/'
         }])
 
     def test_create_professional(self):
@@ -190,11 +188,11 @@ class ProfessionalTestREST(TestCase):
         }
         response = self.client.post('/professionals/', data)
         self.assertEqual(response.status_code, 200)
-        self.assert_('user' in response.json())
-        self.assert_('uuid' in response.json()['user'])
+        self.assertIn('email', response.json())
+        self.assertIn('uuid', response.json())
 
     def test_retrieve_professional(self):
-        response = self.client.get(f'/professionals/{self.professional.uuid}/')
+        response = self.client.get(f'/professionals/{str(self.professional.uuid)}/')
         data = response.json()
         self.assertEqual(response.status_code, 200)
         self.assertIn('uuid', data)
