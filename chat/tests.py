@@ -13,14 +13,14 @@ class TestChat(TestCase):
         self.client = User(
             email='teste4@teste.com',
             full_name='Tom Cruise',
-            celphone='31988776455',
+            cellphone='31988776455',
             password='senha',
         )
         self.client.save()
         self.user = User(
             email='teste5@teste.com',
             full_name='Tom Jobim',
-            celphone='31988776615',
+            cellphone='31988776615',
             password='senha',
         )
         self.user.save()

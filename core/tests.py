@@ -10,7 +10,7 @@ class TestUser(TestCase):
         user = User.objects.create_user(
             email='teste@teste.com',
             full_name='Guido Rossum',
-            celphone='32999198822',
+            cellphone='32999198822',
             password='tetris2',
         )
         user.full_clean()
@@ -20,7 +20,7 @@ class TestUser(TestCase):
         user = User.objects.create_user(
             email='teste1@teste.com',
             full_name='Linuz Torvalds',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.full_clean()
@@ -47,7 +47,7 @@ class TestUser(TestCase):
         user = User(
             email='teste10@teste.com',
             full_name='Chimbinha',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.save()
@@ -70,7 +70,7 @@ class TestUser(TestCase):
         user = User(
             email='teste10@teste.com',
             full_name='Chimbinha',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.save()
@@ -93,7 +93,7 @@ class TestUser(TestCase):
         user = User(
             email='teste10@teste.com',
             full_name='Chimbinha',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.save()

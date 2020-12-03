@@ -33,8 +33,8 @@ class UserChangeForm(UCHF):
             'email',
             'born',
             'avatar',
-            'celphone_ddd',
-            'celphone',
+            'cellphone_ddd',
+            'cellphone',
             'telephone_ddd',
             'telephone',
         )

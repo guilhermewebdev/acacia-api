@@ -11,6 +11,7 @@ class PublicUserSerializer(serializers.ModelSerializer):
             'avatar',
             'is_active',
         )
+        lookup_field = 'uuid'
 
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     user = PublicUserSerializer(many=False, read_only=True)
@@ -54,6 +55,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'avg_rating',
             'availabilities',
         )
+        lookup_field = 'uuid'
 
 
 class PrivateProfessionalSerializer(serializers.ModelSerializer):
@@ -87,6 +89,7 @@ class PrivateProfessionalSerializer(serializers.ModelSerializer):
             'recipient',
             'uuid',
         )
+        lookup_field = 'uuid'
 
 class PrivateUserSerializer(serializers.ModelSerializer):
     professional = PrivateProfessionalSerializer(many=False, read_only=False)
@@ -110,6 +113,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             'is_professional',
             'customer',
             'professional',
+            'costumer',
         )
         read_only_fields = (
             'is_active',
@@ -118,3 +122,4 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             'uuid',
             'saved_in_pagarme',
         )
+        lookup_field = 'uuid'

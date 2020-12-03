@@ -99,9 +99,11 @@ class Professionals(viewsets.ModelViewSet):
 
 class Users(viewsets.ViewSet):
     model = models.User
-    serializer_class = serializers.PrivateUserSerializer
-    permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'
+
+    @property
+    def serializer_class(self):
+        return serializers.PrivateUserSerializer
 
     @action(methods=['get'], detail=False)
     def profile(self, request, uuid=None):
