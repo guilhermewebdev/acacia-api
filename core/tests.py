@@ -235,3 +235,16 @@ class TestUserREST(TestCase):
         data = response.json()
         self.assertIn('uuid', data)
         self.assertEqual(data['uuid'], str(self.user.uuid))
+
+    def test_create_profile(self):
+        self.client.logout()
+        data = {
+            'email': 'email@gmail.com',
+            'full_name': 'Teste da Silva',
+            'password1': 'abda1234',
+            'password2': 'abda1234',
+        }
+        response = self.client.post('/users.json', data=data)
+        json = response.json()
+        self.assertIn('uuid', json)
+        self.assertEqual(json['is_active'], False)

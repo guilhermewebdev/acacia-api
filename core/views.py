@@ -116,10 +116,10 @@ class Users(viewsets.ViewSet):
         serializer = self.serializer_class(instance=request.user, many=False)
         return Response(data=serializer.data)
 
-    def create(self, request):
+    def create(self, request, *args, **kwargs):
         form = forms.UserCreationForm(data=request.data)
         if form.is_valid():
             form.save()
-            serializer = self.serializer_class(data=form.instance)
+            serializer = self.serializer_class(instance=form.instance)
             return Response(serializer.data)
         return Response(form.errors)
