@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from rest_framework import response
-from .models import User, Professional, account_activation_token
+from .models import Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
 
 class TestUser(TestCase):
@@ -197,6 +197,19 @@ class ProfessionalTestREST(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('uuid', data)
         self.assertEqual(data['occupation'], self.professional.occupation)
+
+    def test_availabilities(self):
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2))
+        )
+        availability.save()
+        response = self.client.get(
+            f'/professionals/{str(self.professional.uuid)}/availabilities.json'
+        )
+        json = response.json()
+        self.assertEqual(json[0].get('uuid'), str(availability.uuid))
 
 
 class TestUserREST(TestCase):

@@ -96,6 +96,12 @@ class Professionals(viewsets.ModelViewSet):
         serializer = self.serializer_class(instance=professional, context={'request': request})
         return Response(serializer.data )
 
+    @action(methods=['get'], detail=True)
+    def availabilities(self, request, uuid=None, *args, **kwargs):
+        professional = models.Professional.objects.get(uuid=uuid)
+        serializer = serializers.AvailabilitiesSerializer(professional.availabilities, many=True)
+        return Response(serializer.data)
+
 
 class Users(viewsets.ViewSet):
     model = models.User

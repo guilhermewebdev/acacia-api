@@ -1,11 +1,12 @@
 from rest_framework import serializers
 from . import models
 
-class Availabilities(serializers.HyperlinkedModelSerializer):
+class AvailabilitiesSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = models.Availability
         fields = (
+            'uuid',
             'start_datetime',
             'end_datetime',
             'recurrence',
