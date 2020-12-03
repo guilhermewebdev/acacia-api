@@ -17,8 +17,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_url(self, obj):
         request = self.context['request']
-        http = "https://" if request.is_secure() else "http://"
-        return f'{http}{request.get_host()}/professionals/{obj.uuid}/'
+        return request.build_absolute_uri(f'/professionals/{obj.uuid}/')
     
     class Meta:
         model = models.Professional
