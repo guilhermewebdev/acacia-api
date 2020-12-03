@@ -99,6 +99,7 @@ class Professionals(viewsets.ModelViewSet):
 
 class Users(viewsets.ViewSet):
     model = models.User
+    permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'
 
     @property
