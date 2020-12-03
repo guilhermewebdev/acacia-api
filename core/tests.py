@@ -285,3 +285,21 @@ class TestUserREST(TestCase):
         json = response.json()
         self.assertIn('uuid', json)
         self.assertEqual(response.status_code, 200)
+
+    def test_activate_user(self):
+        user = User.objects.create_user(
+            email='testdd@tst.com',
+            password='abda1234',
+        )
+        user.save()
+        data = {
+            'token': account_activation_token.make_token(user)
+        }
+        response = self.client.put(
+            f'/users/{user.uuid}/',
+            data=data,
+            content_type='application/json'
+        )
+        json = response.json()
+        self.assertIn('is_active', json)
+        self.assertEqual(json['is_active'], True)

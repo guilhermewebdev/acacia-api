@@ -100,7 +100,7 @@ class Professionals(viewsets.ModelViewSet):
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
-    auth_actions = ('profile', 'update', 'profile_update', 'profile_delete', 'change_password')
+    auth_actions = ('profile', 'profile_update', 'profile_delete', 'change_password')
 
     @property
     def serializer_class(self):
@@ -149,3 +149,13 @@ class Users(viewsets.ViewSet):
             serializer = self.serializer_class(instance=form.instance)
             return Response(serializer.data)
         return Response(exception=form.errors, status=400)
+
+    def update(self, request, uuid=None, *args, **kwargs):
+        form = forms.UserActivationForm(data={
+            'uuid': uuid,
+            'token': request.data.get('token'),
+        })
+        if form.is_valid():
+            serializer = self.serializer_class(instance=form.save())
+            return Response(data=serializer.data)
+        return Response(data=form.errors, status=400, exception=form.error_class())

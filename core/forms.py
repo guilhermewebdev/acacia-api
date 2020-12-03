@@ -52,7 +52,8 @@ class UserActivationForm(forms.Form):
 
     def save(self, *args, **kwargs):
         user = User.objects.get(uuid=self.cleaned_data['uuid'])
-        return user.activate(self.cleaned_data['token'])
+        user.activate(self.cleaned_data['token'])
+        return user
 
 class UserDeletionForm(forms.ModelForm):
     email = forms.EmailField(
