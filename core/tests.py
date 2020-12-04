@@ -6,6 +6,7 @@ from django.test import TestCase, Client
 from rest_framework import response
 from .models import Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
+from rest_framework.test import APIClient
 
 class AxesClient(Client):
 
@@ -457,3 +458,9 @@ class TestUserREST(TestCase):
         response = client.post('/auth/', data=credentials, content_type='application/json')
         self.assertEqual(response.status_code, 200, msg=response.json())
         self.assertIn('access', response.json())
+        token = response.json().get('access')
+        api_client = APIClient()
+        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        profile = api_client.get('/users/profile.json')
+        self.assertEqual(profile.status_code, 200, profile.json())
+        self.assertEqual(profile.json()['uuid'], str(self.professional.user.uuid))
