@@ -125,7 +125,7 @@ class Users(viewsets.ViewSet):
 
     @action(methods=['get'], detail=False)
     def profile(self, request, uuid=None, *args, **kwargs):
-        serializer = self.serializer_class(instance=request.user, many=False)
+        serializer = self.serializer_class(instance=request.user, many=False, context={'request': request})
         return Response(data=serializer.data)
 
     @profile.mapping.put
@@ -133,7 +133,7 @@ class Users(viewsets.ViewSet):
         form = forms.UserChangeForm(data=request.data)
         if form.is_valid():
             form.save()
-            serializer = self.serializer_class(instance=form.instance)
+            serializer = self.serializer_class(instance=form.instance, many=False, context={'request': request})
             return Response(data=serializer.data)
         return Response(exception=form.errors, status=400)
 
@@ -148,7 +148,7 @@ class Users(viewsets.ViewSet):
     def change_password(self, request, *args, **kwargs):
         form = forms.PasswordChangeForm(data=request.data, instance=request.user)
         if form.is_valid():
-            serializer = self.serializer_class(instance=form.instance)
+            serializer = self.serializer_class(instance=form.instance, many=False, context={'request': request})
             return Response(data=serializer.data)
         return Response(data=form.errors, exception=form.error_class, status=400)
 
@@ -156,7 +156,7 @@ class Users(viewsets.ViewSet):
         form = forms.UserCreationForm(data=request.data)
         if form.is_valid():
             form.save()
-            serializer = self.serializer_class(instance=form.instance)
+            serializer = self.serializer_class(instance=form.instance, many=False, context={'request': request})
             return Response(serializer.data)
         return Response(exception=form.errors, status=400)
 
@@ -166,7 +166,7 @@ class Users(viewsets.ViewSet):
             'token': request.data.get('token'),
         })
         if form.is_valid():
-            serializer = self.serializer_class(instance=form.save())
+            serializer = self.serializer_class(instance=form.save(), many=False, context={'request': request})
             return Response(data=serializer.data)
         return Response(data=form.errors, status=400, exception=form.error_class())
 

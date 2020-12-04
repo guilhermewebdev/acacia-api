@@ -110,6 +110,10 @@ class PrivateUserSerializer(serializers.ModelSerializer):
     is_professional = serializers.BooleanField(read_only=True)    
     costumer = serializers.JSONField(read_only=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.context['request'].user.is_professional:
+            self.fields.pop('professional')
     class Meta:
         model = models.User
         fields = (
