@@ -4,6 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from core.models import OCCUPATIONS, Professional, STATES, SERVICES, ValidateChoices
 from django.db import models
 from django.contrib.auth import get_user_model
+import uuid
 
 User = get_user_model()
 
@@ -14,6 +15,10 @@ def future_validator(date_time):
         )
 
 class Rating(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False
+    )
     client = models.ForeignKey(
         User,
         on_delete = models.SET(User.get_deleted_user),
@@ -44,6 +49,10 @@ class Rating(models.Model):
     class Meta:
         unique_together = ('client', 'job')
 class Job(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False
+    )
     proposal = models.OneToOneField(
         'Proposal',
         on_delete=models.PROTECT,
@@ -157,6 +166,10 @@ class AcceptMixin(models.Model):
         abstract = True
 
 class Proposal(AcceptMixin):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False
+    )
     client = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -230,6 +243,10 @@ class Proposal(AcceptMixin):
         return super(Proposal, self).full_clean(*args, **kwargs)
 
 class CounterProposal(AcceptMixin):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False
+    )
     proposal = models.OneToOneField(
         Proposal,
         related_name='counter_proposal',

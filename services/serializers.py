@@ -1,11 +1,12 @@
 from rest_framework import serializers
 from . import models
 
-class ProposalSerializer(serializers.HyperlinkedModelSerializer):
+class ProposalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Proposal
         fields = (
+            'uuid',
             'city',
             'state',
             'professional_type',
@@ -15,5 +16,4 @@ class ProposalSerializer(serializers.HyperlinkedModelSerializer):
             'value',
             'description',
             'registration_date',
-            'url',
         )

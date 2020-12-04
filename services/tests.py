@@ -1,3 +1,4 @@
+from django.http.request import HttpRequest
 from django.utils import timezone
 from django.utils.timezone import timedelta
 from django.test import TestCase
@@ -147,3 +148,40 @@ class TestRating(TestCase):
         rating.full_clean()
         rating.save()
         self.assertEqual(self.professional.avg_rating, 4)
+
+class TestProposalREST(TestCase):
+
+    def setUp(self):
+        self.professional = Professional.objects.create(
+            user=User.objects.create_user(
+                email='dance@balance.com',
+                password='abda143501',
+                is_active=True,
+            )
+        )
+        self.professional.save()
+        self.user = User.objects.create_user(
+            email='bate@bola.com',
+            password='abda1234',
+            is_active=True,
+        )
+        self.user.save()
+
+    def test_list_sent_proposals(self):
+        proposal = Proposal(
+            client=self.user,
+            professional=self.professional,
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=TODAY + timedelta(days=1),
+            end_datetime=TODAY + timedelta(days=3),
+            value=300.00,
+            description='Lorem Ipsum dolores'
+        )
+        proposal.save()
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        response = self.client.get('/proposals/sent.json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()[0]['uuid'], str(proposal.uuid))
