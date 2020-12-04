@@ -3,11 +3,11 @@ from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
 import datetime
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
-from django.shortcuts import get_list_or_404, get_object_or_404
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
 
@@ -25,7 +25,12 @@ def professional_postback(request, uuid):
 class IsProfessional(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_professional
-class Professionals(viewsets.ModelViewSet):
+
+class Professionals(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet):
     model = models.Professional
     serializer_class = serializers.PublicProfessionalSerializer
     lookup_field = 'uuid'
