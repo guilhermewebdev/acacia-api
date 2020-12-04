@@ -183,6 +183,7 @@ class PrivateAvailabilities(viewsets.ViewSet):
 
     def list(self, request, *args, **kwargs):
         serializer = serializers.AvailabilitiesSerializer(
-            request.user.professional.availabilities.all()
+            request.user.professional.availabilities.all(),
+            many=True,
         )
         return Response(serializer.data)

@@ -317,11 +317,13 @@ class TestUserREST(TestCase):
         self.assertEqual(json['is_active'], True)
 
     def test_list_self_availabilities(self):
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
         self.client.login(username=self.professional.user.email, password='abda1234')
         response = self.client.get('/users/profile/availabilities.json')
         json = response.json()
-        self.assertIn('uuid', json[0])
-        self.assertQuerysetEqual(
-            self.professional.availabilities.all(),
-            json
-        )
+        self.assertEqual(json[0]['uuid'], str(availability.uuid))
