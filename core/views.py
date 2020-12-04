@@ -82,6 +82,7 @@ class Professionals(
             city__search=list(filters.get('city', [None]))[0],
             state=list(filters.get('state', [None]))[0],
             occupation=list(filters.get('occupation', [None]))[0],
+            search=filters.get('search', [None])[0],
         ))
         queryset = self.queryset.annotate(
                 search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')
