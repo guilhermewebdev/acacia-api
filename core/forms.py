@@ -6,7 +6,7 @@ from django.contrib.auth.forms import (
 )
 from django.core.exceptions import ValidationError
 from django.utils.text import capfirst
-from .models import User, Professional, validate_cpf
+from .models import Availability, User, Professional, validate_cpf
 from django.utils.translation import gettext as _
 import re
 
@@ -33,8 +33,8 @@ class UserChangeForm(UCHF):
             'email',
             'born',
             'avatar',
-            'celphone_ddd',
-            'celphone',
+            'cellphone_ddd',
+            'cellphone',
             'telephone_ddd',
             'telephone',
         )
@@ -52,7 +52,8 @@ class UserActivationForm(forms.Form):
 
     def save(self, *args, **kwargs):
         user = User.objects.get(uuid=self.cleaned_data['uuid'])
-        return user.activate(self.cleaned_data['token'])
+        user.activate(self.cleaned_data['token'])
+        return user
 
 class UserDeletionForm(forms.ModelForm):
     email = forms.EmailField(
@@ -213,7 +214,7 @@ class PasswordChangeForm(forms.ModelForm):
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
+        if not password1 or not password2 and password1 != password2:
             raise ValidationError(
                 ERROR_MESSAGES['password_mismatch'],
                 code='password_mismatch',
@@ -235,4 +236,16 @@ class PasswordChangeForm(forms.ModelForm):
         model = User
         fields = [
             'password',
+        ]
+
+class AvailabilityForm(forms.ModelForm):
+
+    class Meta:
+        model = Availability
+        fields = [
+            'start_datetime',
+            'end_datetime',
+            'recurrence',
+            'weekly_recurrence',
+            'professional',
         ]

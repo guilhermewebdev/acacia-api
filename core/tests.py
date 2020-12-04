@@ -1,8 +1,24 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.test import TestCase
-from .models import User, Professional, account_activation_token
-from graphql_jwt.testcases import JSONWebTokenTestCase
-import json
+from django.forms.models import model_to_dict
+from django.http.request import HttpRequest
+from django.test import TestCase, Client
+from rest_framework import response
+from .models import Availability, User, Professional, account_activation_token
+from django.utils.timezone import now, timedelta
+from rest_framework.test import APIClient
+
+class AxesClient(Client):
+
+    def login(self, **credentials):
+        from django.contrib.auth import authenticate
+        user = authenticate(request=HttpRequest(), **credentials)
+        if user:
+            self._login(user)
+            return True
+        return False
+
+client = AxesClient()
 
 class TestUser(TestCase):
 
@@ -10,7 +26,7 @@ class TestUser(TestCase):
         user = User.objects.create_user(
             email='teste@teste.com',
             full_name='Guido Rossum',
-            celphone='32999198822',
+            cellphone='32999198822',
             password='tetris2',
         )
         user.full_clean()
@@ -20,7 +36,7 @@ class TestUser(TestCase):
         user = User.objects.create_user(
             email='teste1@teste.com',
             full_name='Linuz Torvalds',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.full_clean()
@@ -47,7 +63,7 @@ class TestUser(TestCase):
         user = User(
             email='teste10@teste.com',
             full_name='Chimbinha',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.save()
@@ -70,7 +86,7 @@ class TestUser(TestCase):
         user = User(
             email='teste10@teste.com',
             full_name='Chimbinha',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.save()
@@ -93,7 +109,7 @@ class TestUser(TestCase):
         user = User(
             email='teste10@teste.com',
             full_name='Chimbinha',
-            celphone='31988776655',
+            cellphone='31988776655',
             password='senha',
         )
         user.save()
@@ -112,223 +128,23 @@ class TestUser(TestCase):
         )
         self.assertRaises(ValidationError, professional.full_clean)
 
-class LoginTest(JSONWebTokenTestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
+    def test_confirmation_email(self):
+        user = User.objects.create_user(
             email='test@tst.com',
             password='abda1234',
-            is_active=True,
-        )
-        self.client.authenticate(self.user)
-
-    def execute(self, query, variables):
-        return json.loads(json.dumps(self.client.execute(
-            query, variables
-        ).to_dict(dict_class=dict)))
-
-    def test_activation_user(self):
-        self.client.logout()
-        self.user.is_active = False
-        self.user.save()
-        self.assertEqual(self.user.is_active, False)
-        query = '''
-            mutation ActivateUser($input: UserActivationInput!){
-                activateUser(input: $input) {
-                    isActive
-                }
-            }
-        '''
-        result = self.execute(query, {
-            'input': {
-                'token': account_activation_token.make_token(self.user),
-                'uuid': str(self.user.uuid)
-            }
-        })
-        self.assertNotIn('errors', result)
-        self.assert_(result['data']['activateUser']['isActive'])
-        user = User.objects.get(email=self.user.email)
-        self.assert_(user.is_active)
-
-    def test_get_user(self):
-        query = '''
-            mutation Login($email: String!, $password: String!) {
-                login(email: $email, password: $password) {
-                    payload
-                    refreshExpiresIn
-                }
-            }
-        '''
-
-        variables = {
-            'email': self.user.email,
-            'password': 'abda1234'
-        }
-
-        result = self.execute(query, variables)
-        assert result['data']['login']['payload']['email'] == self.user.email
-
-    def test_sign_up(self):
-        query = '''
-            mutation SignUp($credentials: UserCreationInput!){
-                createUser(input: $credentials) {
-                    user {
-                        fullName
-                        uuid
-                    }
-                }
-            }
-        '''
-
-        result = self.execute(query, dict(credentials={
-            "fullName": "Teste Da Silva",
-            "email": "ttt@ggg.com",
-            "password1": "avg12340",
-            "password2": "avg12340"
-        }))
-
-        assert not 'error' in result
-        assert 'data' in result
-        assert not 'password' in result['data']['createUser']['user']
-
-    def test_update_user(self):
-        self.client.authenticate(self.user)
-        query = '''
-            mutation UpdateUser($data: UserUpdateInput!){
-                updateUser(input: $data){
-                    user {
-                        fullName
-                        uuid
-                        email
-                    }
-                }
-            }
-        '''
-        result = self.execute(query, {
-            'data': {
-                'fullName': "Nerso da Capitinga",
-                'email': self.user.email
-            }
-        })
-        self.assertEqual(result, {
-            'data': {
-                'updateUser': {
-                    'user': {
-                        'fullName': 'Nerso da Capitinga',
-                        'uuid': str(self.user.uuid),
-                        'email': self.user.email,
-                    }
-                }
-            }
-        })
-    
-    def test_update_user_without_login(self):
-        self.client.logout()
-        query = '''
-            mutation UpdateUser($data: UserUpdateInput!){
-                updateUser(input: $data){
-                    user {
-                        fullName
-                        uuid
-                        email
-                    }
-                }
-            }
-        '''
-        result = self.execute(query, {
-            'data': {
-                'fullName': "Nerso da Capitinga",
-                'email': self.user.email
-            }
-        })
-        self.assertEqual(result['errors'][0]['message'], 'You do not have permission to perform this action')
-
-    def test_reset_password(self):
-        self.client.logout()
-        query = '''
-            mutation ResetPassword($input: PasswordResetInput!){
-                resetPassword(input: $input){
-                    email
-                }
-            }
-        '''
-        result = self.execute(query, {
-            'input': {
-                'email': self.user.email
-            }
-        })
-        self.assertEqual(result, {
-            'data': {
-                'resetPassword': {
-                    'email': self.user.email
-                }
-            }
-        })
-
-    def test_delete_user(self):
-        user = User.objects.create_user(
-            email='test@tsdt.com',
-            password='abda1234',
-            is_active=True,
         )
         user.save()
-        self.client.authenticate(user)
-        query = '''
-            mutation DeleteUser($input: UserDeletionInput!){
-                deleteUser(input: $input){
-                    deleted
-                }
-            }
-        '''
-        result = self.execute(query, {
-            'input': {
-                'password': 'abda1234',
-                'email': user.email
-            }
-        })
-        self.assertEqual(result,{
-            'data': {
-                'deleteUser': {
-                    'deleted': True,
-                }
-            }
-        })
+        self.assertNotEqual(settings.SENDER_EMAIL, None)
+        self.assert_(user.confirm_email())
 
-    def test_change_password(self):
-        self.client.authenticate(self.user)
-        query = '''
-            mutation ChangePassword($input: PasswordChangeInput!){
-                changePassword(input: $input){
-                    changed
-                }
-            }
-        '''
-        variables = {
-            'input': {
-                'password': 'abda1234',
-                'password1': 'xicotico',
-                'password2': 'xicotico',
-            }
-        }
-        result = self.execute(query, variables)
-        self.assertEqual(result, {
-            'data': {
-                'changePassword': {
-                    'changed': True,
-                }
-            }
-        })
-        user = User.objects.get(email=self.user.email)
-        self.assert_(user.check_password('xicotico'))
-
-
-class ProfessionalTest(JSONWebTokenTestCase):
+class ProfessionalTestREST(TestCase):
+    
     def setUp(self):
         self.user = User.objects.create_user(
             email='test@tst.com',
             password='abda1234',
             is_active=True,
         )
-        self.client.authenticate(self.user)
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
                 email='test@tstd.com',
@@ -350,157 +166,301 @@ class ProfessionalTest(JSONWebTokenTestCase):
         self.professional.user.save()
         self.professional.save()
 
-    def execute(self, query, variables):
-        return json.loads(json.dumps(self.client.execute(query, variables).to_dict(dict_class=dict)))
-
-    def test_creation_professional(self):
-        query = '''
-            mutation CreateProfessional($input: ProfessionalCreationInput!) {
-                createProfessional(input: $input) {
-                    professional {
-                        user {
-                            fullName
-                        }
-                    }
-                }
-            }
-        '''
-        variables = {
-            'input': {
-                'fullName': 'Fulano de Tal',
-                'email': 'gru@ted.com',
-                'password1': 'vd34560',
-                'password2': 'vd34560',
-                'state': 'MG',
-                'city': 'Belo Horizonte',
-                'address': 'Any local',
-                'zipCode': '36200-000',
-                'rg': 'rj46565',
-                'occupation': 'CI',
-                'coren': '20.000',
-                'cpf': '661.034.190-77',
-            }
-        }
-        result = self.execute(query, variables)
-        self.assertEqual(result, {
-            'data': {
-                'createProfessional': {
-                    'professional': {
-                        'user': {
-                            'fullName': variables['input']['fullName']
-                        }
-                    }
-                }
-            }
-        })
-
-    def test_professional_update(self):
-        self.client.authenticate(self.professional.user)
-        query = '''
-            mutation UpdateProfessional($input: ProfessionalUpdateInput!){
-                updateProfessional(input: $input){
-                    professional {
-                        state
-                    }
-                }
-            }
-        '''
-        variables = {
-            'input': {
-                'state': 'MG',
-                'city': 'Belo Horizonte',
-                'address': 'Any local',
-                'zipCode': '36200-000',
-                'rg': 'rj46565',
-                'occupation': 'CI',
-                'coren': '20.000',
-                'cpf': '661.034.190-77',
-            }
-        }
-        result = self.execute(query, variables)
-        self.assertEqual(result, {
-            'data': {
-                'updateProfessional': {
-                    'professional': {
-                        'state': variables['input']['state'],
-                    }
-                }
-            }
-        })
-
-    def test_professional_deletion(self):
-        self.client.authenticate(self.professional.user)
-        query = '''
-            mutation DeleteProfessional($input: ProfessionalDeletionInput!){
-                deleteProfessional(input: $input){
-                    deleted
-                }
-            }
-        '''
-        variables = {
-            'input': {
-                'email': self.professional.user.email,
-                'password': 'abda1234',
-            }
-        }
-        result = self.execute(query, variables)
-        self.assertEqual(result, {
-            'data': {
-                'deleteProfessional': {
-                    'deleted': True,
-                }
-            }
-        })
-
     def test_list_professionals(self):
-        self.client.logout()
-        query = '''
-            {
-                professionals {
-                    data {
-                        coren
-                    }
-                }
-            }
-        '''
-        result = self.execute(query, {})
-        self.assertEqual(result, {
-            'data': {
-                'professionals': {
-                    'data': [
-                        {
-                            'coren': self.professional.coren
-                        }
-                    ]
-                }
-            }
-        })
+        response = client.get('/professionals.json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [{
+            'uuid': str(self.professional.uuid),
+            'about': self.professional.about,
+            'full_name': self.professional.user.full_name,
+            'email': self.professional.user.email,
+            'avatar': None,
+            'is_active': self.professional.user.is_active,
+            'avg_price': float(self.professional.avg_price),
+            'state': 'MG',
+            'city': self.professional.city,
+            'occupation': self.professional.occupation,
+            'skills': self.professional.skills,
+            'avg_rating': self.professional.avg_rating,
+            'url': f'http://testserver/professionals/{str(self.professional.uuid)}/'
+        }])
 
-    def test_filter_professional(self):
-        self.client.logout()
-        query = '''
-            query FindProfessionals($filters: FilterProfessionalInput){
-                professionals {
-                    data(filters: $filters) {
-                        coren
-                    }
-                }
-            }
-        '''
-        variables = {
-            'filters': {
-                'state': self.professional.state
+    def test_create_professional(self):
+        data = {
+            'state': 'MG',
+            'city':   'Belo Horizonte',
+            'occupation': 'CI',
+            'password1': 'acac333',
+            'password2': 'acac333',
+            'full_name': 'Pindamonhagaba da Silva',
+            'email': 'dudu@google.com',
+            'cpf': '567.933.940-45',
+            'rg': 'rj343534',
+            'address': 'Lá mesmo',
+            'zip_code': '33000-334',
+            'coren': 39.999
+        }
+        response = client.post('/professionals/', data)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('email', response.json())
+        self.assertIn('uuid', response.json())
+
+    def test_retrieve_professional(self):
+        response = client.get(f'/professionals/{str(self.professional.uuid)}/')
+        data = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('uuid', data)
+        self.assertEqual(data['occupation'], self.professional.occupation)
+
+    def test_availabilities(self):
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2))
+        )
+        availability.save()
+        response = client.get(
+            f'/professionals/{str(self.professional.uuid)}/availabilities.json',
+        )
+        json = response.json()
+        self.assertEqual(json[0].get('uuid'), str(availability.uuid))
+
+    def test_unauthorized_deletion(self):
+        response = client.delete(f'/professionals/{str(self.professional.uuid)}.json')
+        self.assertEqual(response.status_code, 405)
+
+    def test_unauthorized_update(self):
+        response = client.put(f'/professionals/{self.professional.uuid}.json', data={
+            'full_name': 'Teste'
+        })
+        self.assertEqual(response.status_code, 405)
+
+class TestUserREST(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='test@tst.com',
+            password='abda1234',
+            is_active=True,
+        )
+        self.professional = Professional.objects.create(
+            user=User.objects.create_user(
+                email='test@tstd.com',
+                password='abda1234',
+                is_active=True,
+                full_name='Bernardo Lagosta'
+            ),
+            state='MG',
+            city='Belo Horizonte',
+            address='Centro',
+            zip_code='36200-000',
+            avg_price=99,
+            cpf="529.982.247-25",
+            rg='mg343402',
+            skills=['CI', 'AE', 'EM'],
+            occupation='CI',
+            coren='10.400'
+        )
+        self.professional.user.save()
+        self.professional.save()
+    
+    def test_get_profile(self):
+        client.login(username=self.user.email, password='abda1234')
+        response = client.get('/users/profile.json')
+        data = response.json()
+        self.assertIn('uuid', data)
+        self.assertEqual(data['uuid'], str(self.user.uuid))
+
+    def test_create_profile(self):
+        client.logout()
+        data = {
+            'email': 'email@gmail.com',
+            'full_name': 'Teste da Silva',
+            'password1': 'abda1234',
+            'password2': 'abda1234',
+        }
+        response = client.post('/users.json', data=data)
+        json = response.json()
+        self.assertIn('uuid', json)
+        self.assertEqual(json['is_active'], False)
+
+    def test_update_profile(self):
+        client.login(username=self.user.email, password='abda1234')
+        data = {
+            'full_name': 'Grande Pequeno',
+            'email': 'teste@gmail.com',
+        }
+        response = client.put(f'/users/profile.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertEqual(response.status_code, 200, msg=str(json))
+        self.assertIn('uuid', json)
+        self.assertEqual(json['uuid'], str(self.user.uuid))
+        self.assertEqual(json['full_name'], data['full_name'])
+
+    def test_update_professional_profile(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        data = {
+            'full_name': 'Grande Pequeno',
+            'email': 'teste@gmail.com',
+            'professional':{
+                'about': 'Hello World',
+                'state': self.professional.state,
+                'city': self.professional.city,
+                'address': self.professional.address,
+                'zip_code': self.professional.zip_code,
+                'cpf': self.professional.cpf,
+                'rg': self.professional.rg,
+                'occupation': self.professional.occupation,
+                'coren': self.professional.coren,
             }
         }
-        result = self.execute(query, variables)
-        self.assertEqual(result, {
-            'data': {
-                'professionals': {
-                    'data': [
-                        {
-                            'coren': self.professional.coren
-                        }
-                    ]
-                }
-            }
+        response = client.put(f'/users/profile.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertEqual(response.status_code, 200, msg=str(json))
+        self.assertIn('uuid', json)
+        self.assertEqual(json['uuid'], str(self.professional.user.uuid))
+        self.assertEqual(json['full_name'], data['full_name'])
+        self.assertEqual(json['professional']['about'], data['professional']['about'])
+
+    def test_user_deletion(self):
+        user = User.objects.create_user(
+            email='tes3t@tst.com',
+            password='abda1234',
+            is_active=True,
+        )
+        user.save()
+        data = {
+            'email': user.email,
+            'password': 'abda1234'
+        }
+        client.login(username=user.email, password='abda1234')
+        response = client.delete(
+            '/users/profile.json',
+            data=data,
+            content_type='application/json'
+        )
+        self.assertEqual(response.json(), {
+            'deleted': True
         })
+
+    def test_change_password(self):
+        client.logout()
+        client.login(username=self.user.email, password='abda1234')
+        data = {
+            'password': 'abda1234',
+            'password1': 'abda143501',
+            'password2': 'abda143501',
+        }
+        response = client.patch(
+            '/users/profile.json',
+            data=data,
+            content_type='application/json'
+        )
+        json = response.json()
+        user = User.objects.get(uuid=str(self.user.uuid))
+        self.assertIn('uuid', json)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(user.check_password(data['password1']))
+
+    def test_activate_user(self):
+        user = User.objects.create_user(
+            email='testdd@tst.com',
+            password='abda1234',
+        )
+        user.save()
+        data = {
+            'token': account_activation_token.make_token(user)
+        }
+        response = client.put(
+            f'/users/{user.uuid}/',
+            data=data,
+            content_type='application/json'
+        )
+        json = response.json()
+        self.assertIn('is_active', json)
+        self.assertEqual(json['is_active'], True)
+
+    def test_list_self_availabilities(self):
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.get('/users/profile/availabilities.json')
+        json = response.json()
+        self.assertEqual(json[0]['uuid'], str(availability.uuid))
+
+    def test_create_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        data = {
+            'start_datetime': (now() + timedelta(days=1)).isoformat(),
+            'end_datetime': (now() + timedelta(days=1, hours=3)).isoformat(),
+        }
+        response = client.post('/users/profile/availabilities.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertIn('uuid', json)
+
+    def test_update_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        data = {
+            'start_datetime': (now() + timedelta(days=2)).isoformat(),
+            'end_datetime': (now() + timedelta(days=2, hours=3)).isoformat(),
+        }
+        response = client.put(f'/users/profile/availabilities/{availability.uuid}.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            json['start_datetime'][:23],
+            data['start_datetime'][:23]
+        )
+
+    def test_delete_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        response = client.delete(f'/users/profile/availabilities/{availability.uuid}.json')
+        json = response.json()
+        self.assertEqual(json,{
+            'deleted': 1
+        })
+
+    def test_retrieve_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        response = client.get(f'/users/profile/availabilities/{availability.uuid}.json')
+        self.assertEqual(response.status_code, 200)
+    
+    def test_login(self):
+        client.logout()
+        self.professional.user.is_active = True
+        self.professional.user.save()
+        credentials = {
+            'email': self.professional.user.email,
+            'password': 'abda1234'
+        }
+        response = client.post('/auth/', data=credentials, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.json())
+        self.assertIn('access', response.json())
+        token = response.json().get('access')
+        api_client = APIClient()
+        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        profile = api_client.get('/users/profile.json')
+        self.assertEqual(profile.status_code, 200, profile.json())
+        self.assertEqual(profile.json()['uuid'], str(self.professional.user.uuid))

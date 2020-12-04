@@ -13,17 +13,19 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path
+from django.urls import path, include
 from financial.views import payment_postback
 from core.views import professional_postback
-from graphene_django.views import GraphQLView
-from django.views.decorators.csrf import csrf_exempt
-from graphql_jwt.decorators import jwt_cookie
 from django.conf.urls.static import static
 from django.conf import settings
+from core.routes import urls as core
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
+    path('', include(core)),
+    path('auth/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
-    path('', jwt_cookie(csrf_exempt(GraphQLView.as_view(graphiql=settings.DEBUG))), name='GraphQL API'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -11,6 +11,8 @@ from django.template.loader import render_to_string
 import re
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator as dtg
 from django.conf import settings
+from django.utils.timezone import now
+
 
 class TokenGenerator(PasswordResetTokenGenerator):
     def _make_hash_value(self, user, timestamp):
@@ -175,13 +177,13 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
-    celphone_ddd = models.CharField(
+    cellphone_ddd = models.CharField(
         max_length=2,
         null=True,
         blank=True,
         validators=[RegexValidator('^[0-9]{2}$')]
     )
-    celphone = models.CharField(
+    cellphone = models.CharField(
         max_length=11,
         null=True,
         blank=True,
@@ -309,10 +311,13 @@ class Availability(models.Model):
         ('SAT', 'Saturday'),
         ('SUN', 'Sunday'),
     )
-    start_date = models.DateField()
-    start_time = models.TimeField()
-    end_date = models.DateField()
-    end_time = models.TimeField()
+    uuid = models.UUIDField(
+        unique=True,
+        editable=False,
+        default=uuid.uuid4
+    )
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
     recurrence = models.CharField(
         choices=RECURRENCES,
         max_length=1,
@@ -339,7 +344,7 @@ class Availability(models.Model):
     )
 
     def validate_start(self):
-        if self.start_datetime < self.registration_date:
+        if self.start_datetime < now():
             raise ValidationError('The start date has passed')
 
     def validate_end(self):
@@ -353,6 +358,11 @@ class Availability(models.Model):
         return super(Availability, self).full_clean(*args, **kwargs)
 
 class Professional(models.Model):
+    uuid = models.UUIDField(
+        unique=True,
+        editable=False,
+        default=uuid.uuid4
+    )
     user = models.OneToOneField(
         User,
         related_name='professional',
@@ -465,8 +475,8 @@ class Professional(models.Model):
                         "type": "phone"
                     },
                     {
-                        "ddd": self.user.celphone_ddd,
-                        "number": f'{self.user.celphone_ddd}{self.user.celphone}',
+                        "ddd": self.user.cellphone_ddd,
+                        "number": f'{self.user.cellphone_ddd}{self.user.cellphone}',
                         "type": "mobile"
                     }
                 ]
