@@ -1,3 +1,4 @@
+from core.models import Availability
 from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
@@ -181,6 +182,7 @@ class Availabilities(viewsets.ViewSet):
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
     permission_classes = [IsAuthenticated, IsProfessional]
+    lookup_field = 'uuid'
 
     def list(self, request, *args, **kwargs):
         serializer = serializers.AvailabilitiesSerializer(
@@ -194,6 +196,18 @@ class PrivateAvailabilities(viewsets.ViewSet):
             **request.data,
             'professional': request.user.professional
         })
+        if form.is_valid():
+            form.save()
+            serializer = AvailabilitiesSerializer(form.instance)
+            return Response(serializer.data)
+        return Response(form.errors, status=400)
+
+    def update(self, request, uuid, *args, **kwargs):
+        availability = get_object_or_404(Availability, uuid=uuid)
+        form = forms.AvailabilityForm({
+            **request.data,
+            'professional': request.user.professional
+        }, instance=availability)
         if form.is_valid():
             form.save()
             serializer = AvailabilitiesSerializer(form.instance)
