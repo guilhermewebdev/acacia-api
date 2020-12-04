@@ -19,10 +19,11 @@ from core.views import professional_postback
 from django.conf.urls.static import static
 from django.conf import settings
 from core.routes import urls as core
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 urlpatterns = [
     path('', include(core)),
-    path('api-auth/', include('rest_framework.urls')),
+    path('auth/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

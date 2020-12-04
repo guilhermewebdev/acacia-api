@@ -445,3 +445,15 @@ class TestUserREST(TestCase):
         availability.save()
         response = client.get(f'/users/profile/availabilities/{availability.uuid}.json')
         self.assertEqual(response.status_code, 200)
+    
+    def test_login(self):
+        client.logout()
+        self.professional.user.is_active = True
+        self.professional.user.save()
+        credentials = {
+            'email': self.professional.user.email,
+            'password': 'abda1234'
+        }
+        response = client.post('/auth/', data=credentials, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.json())
+        self.assertIn('access', response.json())

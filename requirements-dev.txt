@@ -11,3 +11,4 @@ django[bcrypt]
 djangorestframework
 markdown
 django-filter
+djangorestframework-simplejwt
