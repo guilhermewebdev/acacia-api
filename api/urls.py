@@ -20,9 +20,11 @@ from django.conf.urls.static import static
 from django.conf import settings
 from core.routes import urls as core
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+from services.routes import url as services
 
 urlpatterns = [
     path('', include(core)),
+    path('', include(services)),
     path('auth/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
