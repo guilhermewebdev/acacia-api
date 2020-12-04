@@ -1,3 +1,4 @@
+from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
 import datetime
@@ -187,3 +188,14 @@ class PrivateAvailabilities(viewsets.ViewSet):
             many=True,
         )
         return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        form = forms.AvailabilityForm({
+            **request.data,
+            'professional': request.user.professional
+        })
+        if form.is_valid():
+            form.save()
+            serializer = AvailabilitiesSerializer(form.instance)
+            return Response(serializer.data)
+        return Response(form.errors, status=400)

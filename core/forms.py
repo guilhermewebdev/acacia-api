@@ -238,7 +238,6 @@ class PasswordChangeForm(forms.ModelForm):
         ]
 
 class AvailabilityForm(forms.ModelForm):
-    uuid = forms.UUIDField(required=False)
 
     class Meta:
         model = Availability
@@ -247,4 +246,5 @@ class AvailabilityForm(forms.ModelForm):
             'end_datetime',
             'recurrence',
             'weekly_recurrence',
+            'professional',
         ]

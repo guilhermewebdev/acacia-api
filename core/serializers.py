@@ -13,6 +13,10 @@ class AvailabilitiesSerializer(serializers.HyperlinkedModelSerializer):
             'weekly_recurrence',
             'registration_date',
         )
+        read_only_fields = (
+            'registration_date',
+            'uuid',
+        )
 
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     full_name = serializers.CharField(source='user.full_name', max_length=200)
