@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.forms.models import model_to_dict
 from django.http.request import HttpRequest
 from django.test import TestCase, Client
 from rest_framework import response
@@ -223,6 +224,15 @@ class ProfessionalTestREST(TestCase):
         json = response.json()
         self.assertEqual(json[0].get('uuid'), str(availability.uuid))
 
+    def test_unauthorized_deletion(self):
+        response = client.delete(f'/professionals/{str(self.professional.uuid)}.json')
+        self.assertEqual(response.status_code, 405)
+
+    def test_unauthorized_update(self):
+        response = client.put(f'/professionals/{self.professional.uuid}.json', data={
+            'full_name': 'Teste'
+        })
+        self.assertEqual(response.status_code, 405)
 
 class TestUserREST(TestCase):
 
@@ -384,3 +394,14 @@ class TestUserREST(TestCase):
         self.assertEqual(json,{
             'deleted': 1
         })
+
+    def test_retrieve_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        response = client.get(f'/users/profile/availabilities/{availability.uuid}.json')
+        self.assertEqual(response.status_code, 200)

@@ -3,11 +3,11 @@ from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
 import datetime
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
-from django.shortcuts import get_list_or_404, get_object_or_404
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
 
@@ -25,10 +25,16 @@ def professional_postback(request, uuid):
 class IsProfessional(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_professional
-class Professionals(viewsets.ModelViewSet):
+
+class Professionals(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet):
     model = models.Professional
     serializer_class = serializers.PublicProfessionalSerializer
     lookup_field = 'uuid'
+    queryset = models.Professional.objects.filter(user__is_active=True).all()
 
     @property
     def paginated_by(self):
@@ -77,7 +83,7 @@ class Professionals(viewsets.ModelViewSet):
             state=list(filters.get('state', [None]))[0],
             occupation=list(filters.get('occupation', [None]))[0],
         ))
-        queryset = models.Professional.objects.annotate(
+        queryset = self.queryset.annotate(
                 search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')
             ).filter(
             Q(**filter_by_date) | Q(**filter_by_time) | 
@@ -96,16 +102,16 @@ class Professionals(viewsets.ModelViewSet):
         return Response(exception=form.errors, status=400)
 
     def retrieve(self, request, uuid=None):
-        professional = get_object_or_404(models.Professional, uuid=uuid)
+        professional = get_object_or_404(self.queryset, uuid=uuid)
         serializer = self.serializer_class(instance=professional, context={'request': request})
-        return Response(serializer.data )
+        return Response(serializer.data)
 
 
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
     auth_actions = ('profile', 'profile_update', 'profile_delete', 'change_password')
-
+    
     @property
     def serializer_class(self):
         if self.action in self.auth_actions:
@@ -183,6 +189,10 @@ class PrivateAvailabilities(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, IsProfessional]
     lookup_field = 'uuid'
 
+    @property
+    def queryset(self):
+        return self.request.user.professional.availabilities.all()
+
     def list(self, request, *args, **kwargs):
         serializer = serializers.AvailabilitiesSerializer(
             request.user.professional.availabilities.all(),
@@ -201,8 +211,13 @@ class PrivateAvailabilities(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(form.errors, status=400)
 
+    def retrieve(self, request, uuid, *args, **kwargs):
+        availability = get_object_or_404(self.queryset, uuid=uuid)
+        serializer = AvailabilitiesSerializer(instance=availability, many=False)
+        return Response(serializer.data)
+        
     def update(self, request, uuid, *args, **kwargs):
-        availability = get_object_or_404(Availability, uuid=uuid)
+        availability = get_object_or_404(self.queryset, uuid=uuid)
         form = forms.AvailabilityForm({
             **request.data,
             'professional': request.user.professional
@@ -214,6 +229,6 @@ class PrivateAvailabilities(viewsets.ViewSet):
         return Response(form.errors, status=400)
 
     def destroy(self, request, uuid, *args, **kwargs):
-        availability = get_object_or_404(Availability, uuid=uuid)
+        availability = get_object_or_404(self.queryset, uuid=uuid)
         deletions = availability.delete()
         return Response({'deleted': deletions[0]})
