@@ -337,3 +337,23 @@ class TestUserREST(TestCase):
         response = self.client.post('/users/profile/availabilities.json', data=data, content_type='application/json')
         json = response.json()
         self.assertIn('uuid', json)
+
+    def test_update_availability(self):
+        self.client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        data = {
+            'start_datetime': (now() + timedelta(days=2)).isoformat(),
+            'end_datetime': (now() + timedelta(days=2, hours=3)).isoformat(),
+        }
+        response = self.client.put(f'/users/profile/availabilities/{availability.uuid}.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            json['start_datetime'][:23],
+            data['start_datetime'][:23]
+        )
