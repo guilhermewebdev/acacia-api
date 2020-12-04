@@ -189,6 +189,10 @@ class PrivateAvailabilities(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, IsProfessional]
     lookup_field = 'uuid'
 
+    @property
+    def queryset(self):
+        return self.request.user.professional.availabilities.all()
+
     def list(self, request, *args, **kwargs):
         serializer = serializers.AvailabilitiesSerializer(
             request.user.professional.availabilities.all(),
@@ -207,8 +211,13 @@ class PrivateAvailabilities(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(form.errors, status=400)
 
+    def retrieve(self, request, uuid, *args, **kwargs):
+        availability = get_object_or_404(self.queryset, uuid=uuid)
+        serializer = AvailabilitiesSerializer(instance=availability, many=False)
+        return Response(serializer.data)
+        
     def update(self, request, uuid, *args, **kwargs):
-        availability = get_object_or_404(Availability, uuid=uuid)
+        availability = get_object_or_404(self.queryset, uuid=uuid)
         form = forms.AvailabilityForm({
             **request.data,
             'professional': request.user.professional
@@ -220,6 +229,6 @@ class PrivateAvailabilities(viewsets.ViewSet):
         return Response(form.errors, status=400)
 
     def destroy(self, request, uuid, *args, **kwargs):
-        availability = get_object_or_404(Availability, uuid=uuid)
+        availability = get_object_or_404(self.queryset, uuid=uuid)
         deletions = availability.delete()
         return Response({'deleted': deletions[0]})
