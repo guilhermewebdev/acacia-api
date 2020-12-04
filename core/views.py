@@ -7,7 +7,7 @@ from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
 from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -20,6 +20,9 @@ def get_day(date: str) -> int:
 def professional_postback(request, uuid):
     pass
 
+class IsProfessional(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_professional
 class Professionals(viewsets.ModelViewSet):
     model = models.Professional
     serializer_class = serializers.PublicProfessionalSerializer
@@ -174,4 +177,12 @@ class Availabilities(viewsets.ViewSet):
         )
         return Response(serializer.data)
 
-    
+class PrivateAvailabilities(viewsets.ViewSet):
+    lookup_field = 'uuid'
+    permission_classes = [IsAuthenticated, IsProfessional]
+
+    def list(self, request, *args, **kwargs):
+        serializer = serializers.AvailabilitiesSerializer(
+            request.user.professional.availabilities.all()
+        )
+        return Response(serializer.data)
