@@ -88,8 +88,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'axes.middleware.AxesMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'api.urls'
@@ -112,7 +112,11 @@ TEMPLATES = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
+     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
 }
 
 WSGI_APPLICATION = 'api.wsgi.application'
@@ -169,13 +173,6 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.UnsaltedMD5PasswordHasher',
     'django.contrib.auth.hashers.CryptPasswordHasher',
 ]
-
-GRAPHQL_JWT = {
-    'JWT_VERIFY_EXPIRATION': False,
-    'JWT_HIDE_TOKEN_FIELDS': True,
-    'JWT_CSRF_ROTATION': True,
-    'JWT_COOKIE_SECURE': not DEBUG,
-}
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/

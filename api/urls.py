@@ -18,10 +18,10 @@ from financial.views import payment_postback
 from core.views import professional_postback
 from django.conf.urls.static import static
 from django.conf import settings
-from core.routes import router as core
+from core.routes import urls as core
 
 urlpatterns = [
-    path('', include(core.urls)),
+    path('', include(core)),
     path('api-auth/', include('rest_framework.urls')),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),

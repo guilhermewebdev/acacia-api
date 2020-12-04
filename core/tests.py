@@ -1,9 +1,22 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.http.request import HttpRequest
+from django.test import TestCase, Client
 from rest_framework import response
-from .models import User, Professional, account_activation_token
+from .models import Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
+
+class AxesClient(Client):
+
+    def login(self, **credentials):
+        from django.contrib.auth import authenticate
+        user = authenticate(request=HttpRequest(), **credentials)
+        if user:
+            self._login(user)
+            return True
+        return False
+
+client = AxesClient()
 
 class TestUser(TestCase):
 
@@ -152,7 +165,7 @@ class ProfessionalTestREST(TestCase):
         self.professional.save()
 
     def test_list_professionals(self):
-        response = self.client.get('/professionals.json')
+        response = client.get('/professionals.json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [{
             'uuid': str(self.professional.uuid),
@@ -167,7 +180,6 @@ class ProfessionalTestREST(TestCase):
             'occupation': self.professional.occupation,
             'skills': self.professional.skills,
             'avg_rating': self.professional.avg_rating,
-            'availabilities': [],
             'url': f'http://testserver/professionals/{str(self.professional.uuid)}/'
         }])
 
@@ -186,17 +198,30 @@ class ProfessionalTestREST(TestCase):
             'zip_code': '33000-334',
             'coren': 39.999
         }
-        response = self.client.post('/professionals/', data)
+        response = client.post('/professionals/', data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('email', response.json())
         self.assertIn('uuid', response.json())
 
     def test_retrieve_professional(self):
-        response = self.client.get(f'/professionals/{str(self.professional.uuid)}/')
+        response = client.get(f'/professionals/{str(self.professional.uuid)}/')
         data = response.json()
         self.assertEqual(response.status_code, 200)
         self.assertIn('uuid', data)
         self.assertEqual(data['occupation'], self.professional.occupation)
+
+    def test_availabilities(self):
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2))
+        )
+        availability.save()
+        response = client.get(
+            f'/professionals/{str(self.professional.uuid)}/availabilities.json',
+        )
+        json = response.json()
+        self.assertEqual(json[0].get('uuid'), str(availability.uuid))
 
 
 class TestUserREST(TestCase):
@@ -229,21 +254,21 @@ class TestUserREST(TestCase):
         self.professional.save()
     
     def test_get_profile(self):
-        self.client.login(username=self.user.email, password='abda1234')
-        response = self.client.get('/users/profile.json')
+        client.login(username=self.user.email, password='abda1234')
+        response = client.get('/users/profile.json')
         data = response.json()
         self.assertIn('uuid', data)
         self.assertEqual(data['uuid'], str(self.user.uuid))
 
     def test_create_profile(self):
-        self.client.logout()
+        client.logout()
         data = {
             'email': 'email@gmail.com',
             'full_name': 'Teste da Silva',
             'password1': 'abda1234',
             'password2': 'abda1234',
         }
-        response = self.client.post('/users.json', data=data)
+        response = client.post('/users.json', data=data)
         json = response.json()
         self.assertIn('uuid', json)
         self.assertEqual(json['is_active'], False)
@@ -259,8 +284,8 @@ class TestUserREST(TestCase):
             'email': user.email,
             'password': 'abda1234'
         }
-        self.client.login(username=user.email, password='abda1234')
-        response = self.client.delete(
+        client.login(username=user.email, password='abda1234')
+        response = client.delete(
             '/users/profile.json',
             data=data,
             content_type='application/json'
@@ -270,14 +295,14 @@ class TestUserREST(TestCase):
         })
 
     def test_change_password(self):
-        self.client.logout()
-        self.client.login(username=self.user.email, password='abda1234')
+        client.logout()
+        client.login(username=self.user.email, password='abda1234')
         data = {
             'password': 'abda1234',
             'password1': 'abda143501',
             'password2': 'abda143501',
         }
-        response = self.client.patch(
+        response = client.patch(
             '/users/profile.json',
             data=data,
             content_type='application/json'
@@ -295,7 +320,7 @@ class TestUserREST(TestCase):
         data = {
             'token': account_activation_token.make_token(user)
         }
-        response = self.client.put(
+        response = client.put(
             f'/users/{user.uuid}/',
             data=data,
             content_type='application/json'
@@ -303,3 +328,59 @@ class TestUserREST(TestCase):
         json = response.json()
         self.assertIn('is_active', json)
         self.assertEqual(json['is_active'], True)
+
+    def test_list_self_availabilities(self):
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.get('/users/profile/availabilities.json')
+        json = response.json()
+        self.assertEqual(json[0]['uuid'], str(availability.uuid))
+
+    def test_create_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        data = {
+            'start_datetime': (now() + timedelta(days=1)).isoformat(),
+            'end_datetime': (now() + timedelta(days=1, hours=3)).isoformat(),
+        }
+        response = client.post('/users/profile/availabilities.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertIn('uuid', json)
+
+    def test_update_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        data = {
+            'start_datetime': (now() + timedelta(days=2)).isoformat(),
+            'end_datetime': (now() + timedelta(days=2, hours=3)).isoformat(),
+        }
+        response = client.put(f'/users/profile/availabilities/{availability.uuid}.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            json['start_datetime'][:23],
+            data['start_datetime'][:23]
+        )
+
+    def test_delete_availability(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        response = client.delete(f'/users/profile/availabilities/{availability.uuid}.json')
+        json = response.json()
+        self.assertEqual(json,{
+            'deleted': 1
+        })

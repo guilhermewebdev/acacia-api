@@ -1,3 +1,5 @@
+from core.models import Availability
+from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
 import datetime
@@ -5,9 +7,9 @@ from rest_framework import viewsets
 from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -20,6 +22,9 @@ def get_day(date: str) -> int:
 def professional_postback(request, uuid):
     pass
 
+class IsProfessional(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_professional
 class Professionals(viewsets.ModelViewSet):
     model = models.Professional
     serializer_class = serializers.PublicProfessionalSerializer
@@ -159,3 +164,57 @@ class Users(viewsets.ViewSet):
             serializer = self.serializer_class(instance=form.save())
             return Response(data=serializer.data)
         return Response(data=form.errors, status=400, exception=form.error_class())
+
+
+class Availabilities(viewsets.ViewSet):
+    lookup_field = 'uuid'
+
+    def list(self, request, professional_uuid=None, *args, **kwargs):
+        availabilities = models.Availability.objects.filter(
+            professional__uuid=professional_uuid,
+            professional__user__is_active=True
+        ).all()
+        serializer = serializers.AvailabilitiesSerializer(
+            availabilities, many=True,
+        )
+        return Response(serializer.data)
+
+class PrivateAvailabilities(viewsets.ViewSet):
+    lookup_field = 'uuid'
+    permission_classes = [IsAuthenticated, IsProfessional]
+    lookup_field = 'uuid'
+
+    def list(self, request, *args, **kwargs):
+        serializer = serializers.AvailabilitiesSerializer(
+            request.user.professional.availabilities.all(),
+            many=True,
+        )
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        form = forms.AvailabilityForm({
+            **request.data,
+            'professional': request.user.professional
+        })
+        if form.is_valid():
+            form.save()
+            serializer = AvailabilitiesSerializer(form.instance)
+            return Response(serializer.data)
+        return Response(form.errors, status=400)
+
+    def update(self, request, uuid, *args, **kwargs):
+        availability = get_object_or_404(Availability, uuid=uuid)
+        form = forms.AvailabilityForm({
+            **request.data,
+            'professional': request.user.professional
+        }, instance=availability)
+        if form.is_valid():
+            form.save()
+            serializer = AvailabilitiesSerializer(form.instance)
+            return Response(serializer.data)
+        return Response(form.errors, status=400)
+
+    def destroy(self, request, uuid, *args, **kwargs):
+        availability = get_object_or_404(Availability, uuid=uuid)
+        deletions = availability.delete()
+        return Response({'deleted': deletions[0]})

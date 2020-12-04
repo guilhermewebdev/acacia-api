@@ -1,6 +1,23 @@
 from rest_framework import serializers
 from . import models
 
+class AvailabilitiesSerializer(serializers.HyperlinkedModelSerializer):
+
+    class Meta:
+        model = models.Availability
+        fields = (
+            'uuid',
+            'start_datetime',
+            'end_datetime',
+            'recurrence',
+            'weekly_recurrence',
+            'registration_date',
+        )
+        read_only_fields = (
+            'registration_date',
+            'uuid',
+        )
+
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     full_name = serializers.CharField(source='user.full_name', max_length=200)
     email = serializers.EmailField(source='user.email')
@@ -17,8 +34,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_url(self, obj):
         request = self.context['request']
-        http = "https://" if request.is_secure() else "http://"
-        return f'{http}{request.get_host()}/professionals/{obj.uuid}/'
+        return request.build_absolute_uri(f'/professionals/{obj.uuid}/')
     
     class Meta:
         model = models.Professional
@@ -33,7 +49,6 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'occupation',
             'skills',
             'avg_rating',
-            'availabilities',
             'password1',
             'password2',
             'full_name',
