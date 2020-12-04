@@ -224,8 +224,13 @@ class ProfessionalTestREST(TestCase):
         self.assertEqual(json[0].get('uuid'), str(availability.uuid))
 
     def test_unauthorized_deletion(self):
-        client.logout()
         response = client.delete(f'/professionals/{str(self.professional.uuid)}.json')
+        self.assertEqual(response.status_code, 405)
+
+    def test_unauthorized_update(self):
+        response = client.put(f'/professionals/{self.professional.uuid}.json', data={
+            'full_name': 'Teste'
+        })
         self.assertEqual(response.status_code, 405)
 
 class TestUserREST(TestCase):

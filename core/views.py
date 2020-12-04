@@ -34,6 +34,7 @@ class Professionals(
     model = models.Professional
     serializer_class = serializers.PublicProfessionalSerializer
     lookup_field = 'uuid'
+    queryset = models.Professional.objects.filter(user__is_active=True).all()
 
     @property
     def paginated_by(self):
@@ -82,7 +83,7 @@ class Professionals(
             state=list(filters.get('state', [None]))[0],
             occupation=list(filters.get('occupation', [None]))[0],
         ))
-        queryset = models.Professional.objects.annotate(
+        queryset = self.queryset.annotate(
                 search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')
             ).filter(
             Q(**filter_by_date) | Q(**filter_by_time) | 
@@ -101,16 +102,16 @@ class Professionals(
         return Response(exception=form.errors, status=400)
 
     def retrieve(self, request, uuid=None):
-        professional = get_object_or_404(models.Professional, uuid=uuid)
+        professional = get_object_or_404(self.queryset, uuid=uuid)
         serializer = self.serializer_class(instance=professional, context={'request': request})
-        return Response(serializer.data )
+        return Response(serializer.data)
 
 
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
     auth_actions = ('profile', 'profile_update', 'profile_delete', 'change_password')
-
+    
     @property
     def serializer_class(self):
         if self.action in self.auth_actions:
