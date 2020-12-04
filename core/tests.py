@@ -283,6 +283,19 @@ class TestUserREST(TestCase):
         self.assertIn('uuid', json)
         self.assertEqual(json['is_active'], False)
 
+    def test_update_profile(self):
+        client.login(username=self.user.email, password='abda1234')
+        data = {
+            'full_name': 'Grande Pequeno',
+            'email': 'teste@gmail.com',
+        }
+        response = client.put(f'/users/profile.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertEqual(response.status_code, 200, msg=str(json))
+        self.assertIn('uuid', json)
+        self.assertEqual(json['uuid'], str(self.user.uuid))
+        self.assertEqual(json['full_name'], data['full_name'])
+
     def test_user_deletion(self):
         user = User.objects.create_user(
             email='tes3t@tst.com',

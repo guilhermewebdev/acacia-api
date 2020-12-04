@@ -130,12 +130,13 @@ class Users(viewsets.ViewSet):
 
     @profile.mapping.put
     def profile_update(self, request, *args, **kwargs):
-        form = forms.UserChangeForm(data=request.data)
-        if form.is_valid():
-            form.save()
-            serializer = self.serializer_class(instance=form.instance, many=False, context={'request': request})
+        serializer = self.serializer_class(data={
+            **request.data,
+        }, context={'request': request}, instance=request.user)
+        if serializer.is_valid():
+            serializer.update(request.user, serializer.validated_data)
             return Response(data=serializer.data)
-        return Response(exception=form.errors, status=400)
+        return Response(data=serializer.errors, status=400)
 
     @profile.mapping.delete
     def profile_delete(self, request, *args, **kwargs):
