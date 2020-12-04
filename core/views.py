@@ -213,3 +213,8 @@ class PrivateAvailabilities(viewsets.ViewSet):
             serializer = AvailabilitiesSerializer(form.instance)
             return Response(serializer.data)
         return Response(form.errors, status=400)
+
+    def destroy(self, request, uuid, *args, **kwargs):
+        availability = get_object_or_404(Availability, uuid=uuid)
+        deletions = availability.delete()
+        return Response({'deleted': deletions[0]})

@@ -357,3 +357,17 @@ class TestUserREST(TestCase):
             json['start_datetime'][:23],
             data['start_datetime'][:23]
         )
+
+    def test_delete_availability(self):
+        self.client.login(username=self.professional.user.email, password='abda1234')
+        availability = Availability.objects.create(
+            professional=self.professional,
+            start_datetime=(now() + timedelta(days=1)),
+            end_datetime=(now() + timedelta(days=1, hours=2)),
+        )
+        availability.save()
+        response = self.client.delete(f'/users/profile/availabilities/{availability.uuid}.json')
+        json = response.json()
+        self.assertEqual(json,{
+            'deleted': 1
+        })
