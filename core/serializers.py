@@ -114,6 +114,17 @@ class PrivateUserSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         if not self.context['request'].user.is_professional:
             self.fields.pop('professional')
+
+    def update(self, instance, validated_data):
+        if instance.is_professional and 'professional' in validated_data:
+            serializer = PrivateProfessionalSerializer(
+                instance=instance.professional,
+                data=validated_data.pop('professional')
+            )
+            if serializer.is_valid():
+                serializer.update(instance.professional, serializer.validated_data)
+                instance.professional = serializer.instance
+        return super().update(instance, validated_data)
     class Meta:
         model = models.User
         fields = (
