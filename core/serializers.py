@@ -125,6 +125,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
                 serializer.update(instance.professional, serializer.validated_data)
                 instance.professional = serializer.instance
         return super().update(instance, validated_data)
+        
     class Meta:
         model = models.User
         fields = (
