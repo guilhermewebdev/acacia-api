@@ -327,3 +327,13 @@ class TestUserREST(TestCase):
         response = self.client.get('/users/profile/availabilities.json')
         json = response.json()
         self.assertEqual(json[0]['uuid'], str(availability.uuid))
+
+    def test_create_availability(self):
+        self.client.login(username=self.professional.user.email, password='abda1234')
+        data = {
+            'start_datetime': (now() + timedelta(days=1)).isoformat(),
+            'end_datetime': (now() + timedelta(days=1, hours=3)).isoformat(),
+        }
+        response = self.client.post('/users/profile/availabilities.json', data=data, content_type='application/json')
+        json = response.json()
+        self.assertIn('uuid', json)
