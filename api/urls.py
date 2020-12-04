@@ -19,11 +19,13 @@ from core.views import professional_postback
 from django.conf.urls.static import static
 from django.conf import settings
 from core.routes import urls as core
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
     path('', include(core)),
     path('auth/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
