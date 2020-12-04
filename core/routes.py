@@ -4,7 +4,7 @@ from django.urls import path, include
 
 router = routers.DefaultRouter()
 
-router.register(r'professionals', views.Professionals)
+router.register(r'professionals', views.Professionals, basename='Professional')
 router.register(r'users', views.Users, basename='User')
 
 professional = routers.DefaultRouter()
