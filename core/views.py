@@ -189,7 +189,6 @@ class Availabilities(viewsets.ViewSet):
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
     permission_classes = [IsAuthenticated, IsProfessional]
-    lookup_field = 'uuid'
 
     @property
     def queryset(self):
@@ -211,7 +210,7 @@ class PrivateAvailabilities(viewsets.ViewSet):
             form.save()
             serializer = AvailabilitiesSerializer(form.instance)
             return Response(serializer.data)
-        return Response(form.errors, status=400)
+        return Response(form.errors, status=400, exception=form.error_class())
 
     def retrieve(self, request, uuid, *args, **kwargs):
         availability = get_object_or_404(self.queryset, uuid=uuid)
@@ -228,7 +227,7 @@ class PrivateAvailabilities(viewsets.ViewSet):
             form.save()
             serializer = AvailabilitiesSerializer(form.instance)
             return Response(serializer.data)
-        return Response(form.errors, status=400)
+        return Response(form.errors, status=400, exception=form.error_class())
 
     def destroy(self, request, uuid, *args, **kwargs):
         availability = get_object_or_404(self.queryset, uuid=uuid)
