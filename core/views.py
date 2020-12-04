@@ -149,6 +149,7 @@ class Users(viewsets.ViewSet):
     def change_password(self, request, *args, **kwargs):
         form = forms.PasswordChangeForm(data=request.data, instance=request.user)
         if form.is_valid():
+            form.save()
             serializer = self.serializer_class(instance=form.instance, many=False, context={'request': request})
             return Response(data=serializer.data)
         return Response(data=form.errors, exception=form.error_class, status=400)

@@ -331,8 +331,10 @@ class TestUserREST(TestCase):
             content_type='application/json'
         )
         json = response.json()
+        user = User.objects.get(uuid=str(self.user.uuid))
         self.assertIn('uuid', json)
         self.assertEqual(response.status_code, 200)
+        self.assertTrue(user.check_password(data['password1']))
 
     def test_activate_user(self):
         user = User.objects.create_user(
