@@ -1,9 +1,9 @@
 from django.db.models.query_utils import Q
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from . import models, serializers
-from django.shortcuts import get_object_or_404, render
-from rest_framework.viewsets import ViewSet, ModelViewSet
+from django.shortcuts import get_object_or_404
+from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAuthenticated
 from core.views import IsProfessional
 from django.utils.translation import gettext as _
