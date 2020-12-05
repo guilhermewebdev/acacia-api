@@ -46,7 +46,7 @@ class CounterProposalSerializer(serializers.ModelSerializer):
     proposal = serializers.SlugRelatedField(
         slug_field='uuid',
         many=False,
-        queryset=models.Proposal.objects.filter(_accepted__isnull=True).all()
+        queryset=models.Proposal.objects.all()
     )
 
     class Meta:
@@ -63,4 +63,38 @@ class CounterProposalSerializer(serializers.ModelSerializer):
             'accepted',
             'registration_date',
             'uuid',
+        )
+
+class JobSerializer(serializers.ModelSerializer):
+    proposal = serializers.SlugRelatedField(
+        slug_field='uuid',
+        many=False,
+        queryset=models.Proposal.objects.all()
+    )
+    client = serializers.SlugRelatedField(
+        slug_field='uuid',
+        many=False,
+        queryset=models.User.objects.filter(is_active=True).all()
+    )
+    professional = serializers.SlugRelatedField(
+        slug_field='uuid',
+        many=False,
+        queryset=models.Professional.objects.filter(user__is_active=True).all()
+    )
+
+    class Meta:
+        model = models.Job
+        fields = (
+            'uuid',
+            'proposal',
+            'professional',
+            'client',
+            'value',
+            'start_datetime',
+            'end_datetime',
+            'registration_date',
+        )
+        read_only_fields = (
+            'uuid',
+            'registration_date',
         )
