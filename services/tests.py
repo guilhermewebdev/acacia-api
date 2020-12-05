@@ -370,3 +370,10 @@ class TestCounterProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('uuid', response.json())
         self.assertFalse(response.json()['accepted'], msg=response.content)
+
+    def test_delete_counter(self):
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        response = self.client.delete(f'/proposals/{self.proposal.uuid}/counter.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIn('deleted', response.json())
+        self.assertEqual(response.json()['deleted'], 1)
