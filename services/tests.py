@@ -197,3 +197,21 @@ class TestProposalREST(TestCase):
         self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
         response = self.client.get('/proposals/?format=json')
         self.assertEqual(response.status_code, 404, msg=response.content)
+
+    def test_sent_proposal(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        data = dict(
+            client=str(self.user.uuid),
+            professional=str(self.professional.uuid),
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=(TODAY + timedelta(days=1)).isoformat(),
+            end_datetime=(TODAY + timedelta(days=3)).isoformat(),
+            value=300.00,
+            description='Lorem Ipsum dolores'
+        )
+        response = self.client.post('/proposals/sent.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('uuid', response.json())

@@ -172,3 +172,4 @@ class CreationUserSerializer(serializers.ModelSerializer):
             'is_active',
             'uuid',
         )
+        lookup_field = 'uuid'
