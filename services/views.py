@@ -198,4 +198,13 @@ class JobViewSet(ViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+
+    @action(methods=['get'], detail=False)
+    def hires(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            request.user.hires.all(),
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
     
