@@ -2,7 +2,7 @@ from django.db.models.query_utils import Q
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 from . import models, serializers
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from rest_framework.viewsets import ViewSet, ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from core.views import IsProfessional
@@ -40,6 +40,16 @@ class ProposalsViewset(ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
+    def update(self, request, uuid=None, *args, **kwargs):
+        proposal = get_object_or_404(self.queryset, uuid=uuid)
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request},
+        )
+        if serializer.is_valid():
+            serializer.update(proposal, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 
     @action(methods=['get'], detail=False, permission_classes=[IsProfessional])
     def received(self, request, *args, **kwargs):
