@@ -89,7 +89,7 @@ class ProposalsViewset(ViewSet):
         )
         return Response(serializer.data)
 
-    @action(methods=['get'], detail=False, permission_classes=[IsProfessional])
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
     def received(self, request, *args, **kwargs):
         serializer = self.serializer_class(
             self.queryset.filter(professional=request.user.professional),
