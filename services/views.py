@@ -20,6 +20,13 @@ class ProposalsViewset(ViewSet):
             Q(professional__user=self.request.user)
         ).all()
 
+    @property
+    def object(self):
+        return get_object_or_404(
+            self.queryset,
+            uuid=self.kwargs.get('uuid')
+        )
+
     @action(methods=['get'], detail=False)
     def sent(self, request, *args, **kwargs):
         serializer = self.serializer_class(
@@ -115,6 +122,8 @@ class ProposalsViewset(ViewSet):
 
     @counter.mapping.post
     def create_counter(self, request, uuid=True, *args, **kwargs):
+        if request.user.professional != self.object.professional:
+            return Response({'error': 'Unauthorized'}, status=400)
         serializer = serializers.CounterProposalSerializer(
             data={
                 'proposal': uuid,
