@@ -360,3 +360,13 @@ class TestCounterProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('uuid', response.json())
         self.assertTrue(response.json()['accepted'], msg=response.content)
+  
+    def test_reject_counter(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        data = {
+            'accept': False
+        }
+        response = self.client.patch(f'/proposals/{self.proposal.uuid}/counter.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIn('uuid', response.json())
+        self.assertFalse(response.json()['accepted'], msg=response.content)
