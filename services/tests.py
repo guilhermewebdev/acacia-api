@@ -336,7 +336,7 @@ class TestCounterProposalREST(TestCase):
             'description': 'NaN'
         }
         response = self.client.post(f'/proposals/{proposal.uuid}/counter.json', data=data, content_type='application/json')
-        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.status_code, 201, response.content)
         self.assertIn('uuid', response.json())
         self.assertEqual(response.json()['proposal'], str(proposal.uuid))
 

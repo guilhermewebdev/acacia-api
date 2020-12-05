@@ -131,11 +131,11 @@ class ProposalsViewset(ViewSet):
             serializer.instance = serializer.create(serializer.validated_data)
             serializer.instance.full_clean()
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
     @counter.mapping.put
-    def update_counter(self, request, uuid=True, *args, **kwargs):
+    def update_counter(self, request, uuid=None, *args, **kwargs):
         if request.user.professional != self.object.professional:
             return Response({'error': 'Unauthorized'}, status=400)
         counter_proposal = get_object_or_404(models.CounterProposal, proposal__uuid=uuid, _accepted__isnull=True)
@@ -148,6 +148,17 @@ class ProposalsViewset(ViewSet):
             serializer.update(counter_proposal, serializer.validated_data)
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
-            
 
-        
+    @counter.mapping.patch
+    def accept_or_reject_counter(self, request, uuid=None, *args, **kwargs):
+        if not 'accept' in request.data or type(request.data.get('accept')) != bool:
+            return Response({'error': '"accept" field is required'}, status=400)
+        if self.object.client != request.user:
+            return Response({'error': 'Unauthorized'}, status=403)
+        counter_proposal = get_object_or_404(models.CounterProposal, proposal__uuid=uuid, _accepted__isnull=True)
+        if request.data.get('accept') == True:
+            counter_proposal.accept()
+        else:
+            counter_proposal.reject()
+        serializer = serializers.CounterProposalSerializer(counter_proposal)
+        return Response(serializer.data)
