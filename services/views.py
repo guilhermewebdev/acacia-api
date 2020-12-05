@@ -7,7 +7,7 @@ from rest_framework.viewsets import ViewSet, ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from core.views import IsProfessional
 
-class ProposalsViewset(ModelViewSet):
+class ProposalsViewset(ViewSet):
     serializer_class = serializers.ProposalSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'

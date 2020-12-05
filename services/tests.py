@@ -192,3 +192,8 @@ class TestProposalREST(TestCase):
         response = self.client.get('/proposals/received.json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()[0]['uuid'], str(self.proposal.uuid))
+
+    def test_list_proposals(self):
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        response = self.client.get('/proposals/?format=json')
+        self.assertEqual(response.status_code, 404, msg=response.content)
