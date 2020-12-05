@@ -46,7 +46,7 @@ class CounterProposalSerializer(serializers.ModelSerializer):
     proposal = serializers.SlugRelatedField(
         slug_field='uuid',
         many=False,
-        queryset=models.CounterProposal.objects.all()
+        queryset=models.Proposal.objects.filter(_accepted__isnull=True).all()
     )
 
     class Meta:

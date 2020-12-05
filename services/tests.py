@@ -315,3 +315,27 @@ class TestCounterProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('uuid', response.json())
         self.assertEqual(response.json()['uuid'], str(self.counter_proposal.uuid))
+
+    def test_create_counter_proposal(self):
+        proposal = Proposal.objects.create(
+            client=self.user,
+            professional=self.professional,
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=TODAY + timedelta(days=1),
+            end_datetime=TODAY + timedelta(days=3),
+            value=300.00,
+            description='Lorem Ipsum dolores'
+        )
+        proposal.save()
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        data = {
+            'value': 320,
+            'description': 'NaN'
+        }
+        response = self.client.post(f'/proposals/{proposal.uuid}/counter.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIn('uuid', response.json())
+        self.assertEqual(response.json()['proposal'], str(proposal.uuid))

@@ -17,7 +17,8 @@ def future_validator(date_time):
 class Rating(models.Model):
     uuid = models.UUIDField(
         default=uuid.uuid4,
-        editable=False
+        editable=False,
+        unique=True,
     )
     client = models.ForeignKey(
         User,
@@ -51,7 +52,8 @@ class Rating(models.Model):
 class Job(models.Model):
     uuid = models.UUIDField(
         default=uuid.uuid4,
-        editable=False
+        editable=False,
+        unique=True,
     )
     proposal = models.OneToOneField(
         'Proposal',
@@ -168,7 +170,8 @@ class AcceptMixin(models.Model):
 class Proposal(AcceptMixin):
     uuid = models.UUIDField(
         default=uuid.uuid4,
-        editable=False
+        editable=False,
+        unique=True,
     )
     client = models.ForeignKey(
         User,
@@ -247,7 +250,8 @@ class Proposal(AcceptMixin):
 class CounterProposal(AcceptMixin):
     uuid = models.UUIDField(
         default=uuid.uuid4,
-        editable=False
+        editable=False,
+        unique=True,
     )
     proposal = models.OneToOneField(
         Proposal,
