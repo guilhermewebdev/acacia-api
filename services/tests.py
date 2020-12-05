@@ -234,6 +234,10 @@ class TestProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, msg=response.json())
         self.assertIn('uuid', response.json())
         self.assertEqual(str(self.proposal.uuid), response.json()['uuid'])
+        self.proposal = Proposal.objects.get(uuid=str(self.proposal.uuid))
+        self.assertEqual(self.proposal.city, data['city'])
+        self.assertEqual(self.proposal.state, data['state'])
+        self.assertEqual(self.proposal.value, data['value'])
 
     def test_retrieve_proposal(self):
         self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
