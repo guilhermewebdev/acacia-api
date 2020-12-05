@@ -45,7 +45,7 @@ class ProposalSerializer(serializers.ModelSerializer):
 class CounterProposalSerializer(serializers.ModelSerializer):
 
     class Meta:
-        models = models.CounterProposal
+        model = models.CounterProposal
         fields = (
             'uuid',
             'proposal',

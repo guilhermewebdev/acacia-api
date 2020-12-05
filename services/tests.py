@@ -271,3 +271,47 @@ class TestProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('deleted', response.json())
         self.assertEqual(response.json()['deleted'], 1)
+
+class TestCounterProposalREST(TestCase):
+
+    def setUp(self):
+        self.professional = Professional.objects.create(
+            user=User.objects.create_user(
+                email='dance@balance.com',
+                password='abda143501',
+                is_active=True,
+            )
+        )
+        self.professional.save()
+        self.user = User.objects.create_user(
+            email='bate@bola.com',
+            password='abda1234',
+            is_active=True,
+        )
+        self.user.save()
+        self.proposal = Proposal(
+            client=self.user,
+            professional=self.professional,
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=TODAY + timedelta(days=1),
+            end_datetime=TODAY + timedelta(days=3),
+            value=300.00,
+            description='Lorem Ipsum dolores'
+        )
+        self.proposal.save()
+        self.counter_proposal = CounterProposal(
+            proposal=self.proposal,
+            value=320,
+            description='NaN'
+        )
+        self.counter_proposal.save()
+
+    def test_list_sent_counter_proposals(self):
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        response = self.client.get(f'/proposals/{self.proposal.uuid}/counter.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIn('uuid', response.json())
+        self.assertEqual(response.json()['uuid'], str(self.counter_proposal.uuid))

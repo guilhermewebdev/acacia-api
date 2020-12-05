@@ -15,12 +15,10 @@ class ProposalsViewset(ViewSet):
 
     @property    
     def queryset(self):
-        if self.request.user.is_professional:
-            return models.Proposal.objects.filter(
-                Q(client=self.request.user) |
-                Q(professional=self.request.user.professional)
-            ).all()
-        return self.request.user.proposals.all()
+        return models.Proposal.objects.filter(
+            Q(client=self.request.user) |
+            Q(professional__user=self.request.user)
+        ).all()
 
     @action(methods=['get'], detail=False)
     def sent(self, request, *args, **kwargs):
@@ -104,25 +102,13 @@ class ProposalsViewset(ViewSet):
             return Response({'deleted': proposal.delete()[0]})
         return Response({'error': 'Unauthorized'}, status=403)
 
-class CounterProposal(ViewSet):
-    serializer_class = serializers.CounterProposalSerializer
-    permission_classes = [IsAuthenticated]
-
-    @property
-    def queryset(self):
-        return models.CounterProposal.objects.filter(
-            Q(proposal__professional__user=self.request.user) |
-            Q(proposal__client=self.request.user)
-        )
-
-    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
-    def sent(self, request, *args, **kwargs):
-        serializer = self.serializer_class(
-            self.queryset.filter(
-                proposal__professional=request.user.professional
-            ),
-            many=True,
-            context={'request': request}
+    @action(methods=['get'], detail=True)
+    def counter(self, request, uuid=None, *args, **kwargs):
+        proposal = get_object_or_404(self.queryset, uuid=uuid)
+        serializer = serializers.CounterProposalSerializer(
+            proposal.counter_proposal,
+            context={'request': request},
+            many=False,
         )
         return Response(serializer.data)
         
