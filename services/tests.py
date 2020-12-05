@@ -215,3 +215,22 @@ class TestProposalREST(TestCase):
         response = self.client.post('/proposals.json', data=data, content_type='application/json')
         self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertIn('uuid', response.json())
+
+    def test_update_proposal(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        data = dict(
+            client=str(self.user.uuid),
+            professional=str(self.professional.uuid),
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=(TODAY + timedelta(days=1)).isoformat(),
+            end_datetime=(TODAY + timedelta(days=3)).isoformat(),
+            value=300.00,
+            description='Lorem Ipsum dolores'
+        )
+        response = self.client.put(f'/proposals/{self.proposal.uuid}.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.json())
+        self.assertIn('uuid', response.json())
+        self.assertEqual(str(self.proposal.uuid), response.json()['uuid'])

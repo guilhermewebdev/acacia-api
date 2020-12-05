@@ -174,11 +174,13 @@ class Proposal(AcceptMixin):
         User,
         on_delete=models.CASCADE,
         related_name='proposals',
+        editable=False,
     )
     professional = models.ForeignKey(
         Professional,
         on_delete=models.CASCADE,
         related_name='proposals',
+        editable=False,
     )
     city = models.CharField(
         max_length=100,

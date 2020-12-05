@@ -41,13 +41,15 @@ class ProposalsViewset(ViewSet):
         return Response(serializer.errors, status=400)
 
     def update(self, request, uuid=None, *args, **kwargs):
-        proposal = get_object_or_404(self.queryset, uuid=uuid)
+        proposal: models.Proposal = get_object_or_404(self.queryset, uuid=uuid)
         serializer = self.serializer_class(
             data=request.data,
             context={'request': request},
+            instance=proposal,
         )
-        if serializer.is_valid():
+        if serializer.is_valid() and request.user == proposal.client:
             serializer.update(proposal, serializer.validated_data)
+            proposal.full_clean()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
