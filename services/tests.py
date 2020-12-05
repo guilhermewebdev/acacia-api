@@ -255,4 +255,10 @@ class TestProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('accepted', response.json())
         self.assertEqual(response.json()['accepted'], True)
-        
+
+    def test_reject_proposal(self):
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        response = self.client.put(f'/proposals/{self.proposal.uuid}/reject.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIn('accepted', response.json())
+        self.assertEqual(response.json()['accepted'], False)
