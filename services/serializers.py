@@ -43,6 +43,11 @@ class ProposalSerializer(serializers.ModelSerializer):
         )
 
 class CounterProposalSerializer(serializers.ModelSerializer):
+    proposal = serializers.SlugRelatedField(
+        slug_field='uuid',
+        many=False,
+        queryset=models.CounterProposal.objects.all()
+    )
 
     class Meta:
         model = models.CounterProposal
@@ -53,4 +58,9 @@ class CounterProposalSerializer(serializers.ModelSerializer):
             'description',
             'registration_date',
             'accepted',
+        )
+        read_only_fields = (
+            'accepted',
+            'registration_date',
+            'uuid',
         )

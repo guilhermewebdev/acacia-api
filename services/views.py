@@ -111,4 +111,23 @@ class ProposalsViewset(ViewSet):
             many=False,
         )
         return Response(serializer.data)
+
+
+    @counter.mapping.post
+    def create_counter(self, request, uuid=True, *args, **kwargs):
+        serializer = serializers.CounterProposalSerializer(
+            data={
+                **request.data,
+                'proposal': uuid
+            },
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            instance = serializer.create(serializer.validated_data)
+            instance.full_clean()
+            serializer.save()
+            return Response(data=serializer.data)
+        return Response(serializer.errors, status=400)
+            
+
         
