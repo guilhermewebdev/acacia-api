@@ -176,6 +176,7 @@ class Users(viewsets.ViewSet):
 
 class Availabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
+    basename = 'ProfessionalAvailabilities'
 
     def list(self, request, professional_uuid=None, *args, **kwargs):
         availabilities = models.Availability.objects.filter(
@@ -190,6 +191,7 @@ class Availabilities(viewsets.ViewSet):
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
     permission_classes = [IsAuthenticated, IsProfessional]
+    basename = 'SelfAvailabilities'
 
     @property
     def queryset(self):

@@ -255,6 +255,8 @@ class TestProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('accepted', response.json())
         self.assertEqual(response.json()['accepted'], True)
+        self.assertIn('job', response.json())
+        self.assertEqual(response.json()['job'], str(self.proposal.job.uuid))
 
     def test_reject_proposal(self):
         self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')

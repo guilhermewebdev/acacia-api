@@ -1,20 +1,10 @@
-from rest_framework import routers
 from . import views
-from django.urls import path, include
 
-core = routers.DefaultRouter()
 
-core.register(r'professionals', views.Professionals, basename='Professional')
-core.register(r'users', views.Users, basename='User')
+def register(router):
+    router.register(r'professionals', views.Professionals, basename='Professional')
+    router.register(r'users', views.Users, basename='User')
 
-professional = routers.DefaultRouter()
-professional.register(r'availabilities', views.Availabilities, basename='Availability')
+    router.register(r'professionals/(?P<professional_uuid>[^/.]+)/availabilities', views.Availabilities, basename='ProfessionalAvailabilities')
 
-user = routers.DefaultRouter()
-user.register(r'availabilities', views.PrivateAvailabilities, basename='Availability')
-
-urls = [
-    path('', include(core.urls)),
-    path('professionals/<professional_uuid>/', include(professional.urls)),
-    path('users/profile/', include(user.urls)),
-]
+    router.register(r'users/profile/availabilities', views.PrivateAvailabilities, basename='SelfAvailabilities')

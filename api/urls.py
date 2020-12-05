@@ -18,16 +18,20 @@ from financial.views import payment_postback
 from core.views import professional_postback
 from django.conf.urls.static import static
 from django.conf import settings
-from core.routes import urls as core
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
-from services.routes import url as services
+from rest_framework import routers
+import core.routes
+import services.routes
+
+router = routers.DefaultRouter()
+core.routes.register(router)
+services.routes.register(router)
 
 urlpatterns = [
-    path('', include(core)),
-    path('', include(services)),
     path('auth/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('postback/payment/<uuid:str>/', payment_postback),
     path('postback/professional/<uuid:str>/', professional_postback),
+    path('', include(router.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

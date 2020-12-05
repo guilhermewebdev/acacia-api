@@ -223,7 +223,8 @@ class ProfessionalTestREST(TestCase):
             f'/professionals/{str(self.professional.uuid)}/availabilities.json',
         )
         json = response.json()
-        self.assertEqual(json[0].get('uuid'), str(availability.uuid))
+        self.assertEqual(len(json), 1, response.content)
+        self.assertEqual(json[0].get('uuid'), str(availability.uuid), response.content)
 
     def test_unauthorized_deletion(self):
         response = client.delete(f'/professionals/{str(self.professional.uuid)}.json')
