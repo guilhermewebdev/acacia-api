@@ -105,4 +105,24 @@ class ProposalsViewset(ViewSet):
         return Response({'error': 'Unauthorized'}, status=403)
 
 class CounterProposal(ViewSet):
-    pass
+    serializer_class = serializers.CounterProposalSerializer
+    permission_classes = [IsAuthenticated]
+
+    @property
+    def queryset(self):
+        return models.CounterProposal.objects.filter(
+            Q(proposal__professional__user=self.request.user) |
+            Q(proposal__client=self.request.user)
+        )
+
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
+    def sent(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            self.queryset.filter(
+                proposal__professional=request.user.professional
+            ),
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+        
