@@ -53,6 +53,14 @@ class ProposalsViewset(ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
+    def retrieve(self, request, uuid=None, *args, **kwargs):
+        proposal: models.Proposal = get_object_or_404(self.queryset, uuid=uuid)
+        serializer = self.serializer_class(
+            instance=proposal,
+            context={'request': request},
+        )
+        return Response(data=serializer.data)
+
     @action(methods=['get'], detail=False, permission_classes=[IsProfessional])
     def received(self, request, *args, **kwargs):
         serializer = self.serializer_class(
