@@ -61,6 +61,14 @@ class ProposalsViewset(ViewSet):
         )
         return Response(data=serializer.data)
 
+    def list(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            self.queryset,
+            context={'request': request},
+            many=True
+        )
+        return Response(serializer.data)
+
     @action(methods=['get'], detail=False, permission_classes=[IsProfessional])
     def received(self, request, *args, **kwargs):
         serializer = self.serializer_class(

@@ -196,7 +196,9 @@ class TestProposalREST(TestCase):
     def test_list_proposals(self):
         self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
         response = self.client.get('/proposals/?format=json')
-        self.assertEqual(response.status_code, 405, msg=response.content)
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertEqual(len(response.json()), 1)
+        self.assertIn('uuid', response.json()[0])
 
     def test_sent_proposal(self):
         self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
