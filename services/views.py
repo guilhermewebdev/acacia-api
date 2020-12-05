@@ -178,3 +178,17 @@ class ProposalsViewset(ViewSet):
             proposal__professional=request.user.professional
         )
         return Response({'deleted': counter_proposal.delete()[0]})
+
+class JobViewSet(ViewSet):
+    serializer_class = serializers.JobSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'uuid'
+
+    @property
+    def queryset(self):
+        return models.Job.objects.filter(
+            Q(professional__user=self.request.user, proposal__professional__user=self.request.user) |
+            Q(client=self.request.user, proposal__client=self.request.user)
+        ).all()
+
+    
