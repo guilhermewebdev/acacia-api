@@ -31,17 +31,24 @@ class ProposalsViewset(ViewSet):
         )
         return Response(serializer.data)
 
-    @action(methods=['put'], detail=True)
-    def accept(self, request, uuid=None, *args, **kwargs):
+    def __accept_or_reject(self, request, uuid, accept):
         proposal: models.Proposal = get_object_or_404(self.queryset, uuid=uuid)
         if request.user == proposal.professional.user:
-            proposal.accept()
+            proposal.accept() if accept else proposal.reject()
             serializer = self.serializer_class(
                 proposal,
                 context={'request': request}
             )
             return Response(serializer.data)
         return Response({'error': _('Unauthorized')}, status=403)
+
+    @action(methods=['put'], detail=True)
+    def accept(self, request, uuid=None, *args, **kwargs):
+        return self.__accept_or_reject(request, uuid, True)
+
+    @action(methods=['put'], detail=True)
+    def reject(self, request, uuid=None, *args, **kwargs):
+        return self.__accept_or_reject(request, uuid, False)
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(
