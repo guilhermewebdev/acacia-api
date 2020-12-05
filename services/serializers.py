@@ -12,6 +12,11 @@ class ProposalSerializer(serializers.ModelSerializer):
         many=False,
         queryset=models.Professional.objects.filter(user__is_active=True).all()
     )
+    job = serializers.SlugRelatedField(
+        slug_field='uuid',
+        many=False,
+        queryset=models.Job.objects.all()
+    )
 
     class Meta:
         model = models.Proposal
@@ -28,8 +33,11 @@ class ProposalSerializer(serializers.ModelSerializer):
             'registration_date',
             'professional',
             'client',
+            '_accepted',
+            'job',
         )
         read_only_fields = (
             'uuid',
             'registration_date',
+            '_accepted',
         )

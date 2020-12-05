@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from rest_framework.viewsets import ViewSet, ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from core.views import IsProfessional
+from django.utils.translation import gettext as _
 
 class ProposalsViewset(ViewSet):
     serializer_class = serializers.ProposalSerializer
@@ -29,6 +30,18 @@ class ProposalsViewset(ViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+
+    @action(methods=['put'], detail=True)
+    def accept(self, request, uuid=None, *args, **kwargs):
+        proposal: models.Proposal = get_object_or_404(self.queryset, uuid=uuid)
+        if request.user == proposal.professional.user:
+            proposal.accept()
+            serializer = self.serializer_class(
+                proposal,
+                context={'request': request}
+            )
+            return Response(serializer.data)
+        return Response({'error': _('Unauthorized')}, status=403)
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(
