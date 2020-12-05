@@ -29,3 +29,12 @@ class ProposalsViewset(ModelViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+
+    @action(methods=['get'], detail=False, permission_classes=[IsProfessional])
+    def received(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            self.queryset.filter(professional=request.user.professional),
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)

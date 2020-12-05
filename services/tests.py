@@ -166,9 +166,7 @@ class TestProposalREST(TestCase):
             is_active=True,
         )
         self.user.save()
-
-    def test_list_sent_proposals(self):
-        proposal = Proposal(
+        self.proposal = Proposal(
             client=self.user,
             professional=self.professional,
             city='Curitiba',
@@ -180,8 +178,17 @@ class TestProposalREST(TestCase):
             value=300.00,
             description='Lorem Ipsum dolores'
         )
-        proposal.save()
+        self.proposal.save()
+
+    def test_list_sent_proposals(self):
         self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
         response = self.client.get('/proposals/sent.json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()[0]['uuid'], str(proposal.uuid))
+        self.assertEqual(response.json()[0]['uuid'], str(self.proposal.uuid))
+
+    def test_list_received_proposals(self):
+        self.client.logout()
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        response = self.client.get('/proposals/received.json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()[0]['uuid'], str(self.proposal.uuid))
