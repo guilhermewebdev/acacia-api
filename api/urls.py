@@ -24,6 +24,7 @@ import core.routes
 import services.routes
 
 router = routers.DefaultRouter()
+
 core.routes.register(router)
 services.routes.register(router)
 

@@ -288,6 +288,11 @@ class CounterProposal(AcceptMixin):
         if (self.value < (0.8 * self.proposal.value)):
             raise ValidationError('The counter offer must be at least 20% more than the offer')
     
+    def validate_proposal(self):
+        if self.proposal.accepted != None:
+            raise ValidationError('The proposal already be accepted or rejected')
+
     def full_clean(self, *args, **kwargs):
         self.validate_value()
+        self.validate_proposal()
         return super(CounterProposal, self).full_clean(*args, **kwargs)

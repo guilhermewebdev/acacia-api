@@ -103,3 +103,6 @@ class ProposalsViewset(ViewSet):
         if proposal.client == request.user and not proposal.accepted:
             return Response({'deleted': proposal.delete()[0]})
         return Response({'error': 'Unauthorized'}, status=403)
+
+class CounterProposal(ViewSet):
+    pass

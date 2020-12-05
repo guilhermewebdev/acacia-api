@@ -41,3 +41,16 @@ class ProposalSerializer(serializers.ModelSerializer):
             'registration_date',
             'accepted',
         )
+
+class CounterProposalSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        models = models.CounterProposal
+        fields = (
+            'uuid',
+            'proposal',
+            'value',
+            'description',
+            'registration_date',
+            'accepted',
+        )
