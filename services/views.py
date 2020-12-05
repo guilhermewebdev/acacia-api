@@ -119,7 +119,6 @@ class ProposalsViewset(ViewSet):
         )
         return Response(serializer.data)
 
-
     @counter.mapping.post
     def create_counter(self, request, uuid=True, *args, **kwargs):
         if request.user.professional != self.object.professional:
@@ -139,10 +138,11 @@ class ProposalsViewset(ViewSet):
     def update_counter(self, request, uuid=True, *args, **kwargs):
         if request.user.professional != self.object.professional:
             return Response({'error': 'Unauthorized'}, status=400)
-        counter_proposal = get_object_or_404(models.CounterProposal, proposal=uuid)
+        counter_proposal = get_object_or_404(models.CounterProposal, proposal__uuid=uuid, _accepted__isnull=True)
         serializer = serializers.CounterProposalSerializer(
             data={**request.data, 'proposal': uuid,},
             context={'request': request},
+            instance=counter_proposal,
         )
         if serializer.is_valid():
             serializer.update(counter_proposal, serializer.validated_data)

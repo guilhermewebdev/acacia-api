@@ -339,3 +339,14 @@ class TestCounterProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('uuid', response.json())
         self.assertEqual(response.json()['proposal'], str(proposal.uuid))
+
+    def test_update_counter_proposal(self):
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        data = {
+            'value': 310,
+            'description': 'NaN'
+        }
+        response = self.client.put(f'/proposals/{self.proposal.uuid}/counter.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIn('uuid', response.json())
+        self.assertEqual(data['value'], response.json()['value'])
