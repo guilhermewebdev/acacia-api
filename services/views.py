@@ -1,4 +1,5 @@
 from django.db.models.query_utils import Q
+from django.http import request
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from . import models, serializers
@@ -155,10 +156,25 @@ class ProposalsViewset(ViewSet):
             return Response({'error': '"accept" field is required'}, status=400)
         if self.object.client != request.user:
             return Response({'error': 'Unauthorized'}, status=403)
-        counter_proposal = get_object_or_404(models.CounterProposal, proposal__uuid=uuid, _accepted__isnull=True)
+        counter_proposal = get_object_or_404(
+            models.CounterProposal,
+            proposal__uuid=uuid,
+            _accepted__isnull=True,
+            proposal__client=request.user,
+        )
         if request.data.get('accept') == True:
             counter_proposal.accept()
         else:
             counter_proposal.reject()
         serializer = serializers.CounterProposalSerializer(counter_proposal)
         return Response(serializer.data)
+
+    @counter.mapping.delete
+    def destroy_counter(self, request, uuid=None, *args, **kwargs):
+        counter_proposal = get_object_or_404(
+            models.CounterProposal,
+            proposal__uuid=uuid,
+            _accepted__isnull=True,
+            proposal__professional=request.user.professional
+        )
+        return Response({'deleted': counter_proposal.delete()[0]})
