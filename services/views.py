@@ -125,16 +125,27 @@ class ProposalsViewset(ViewSet):
         if request.user.professional != self.object.professional:
             return Response({'error': 'Unauthorized'}, status=400)
         serializer = serializers.CounterProposalSerializer(
-            data={
-                'proposal': uuid,
-                **request.data,
-            },
+            data={**request.data, 'proposal': uuid,},
             context={'request': request}
         )
         if serializer.is_valid():
             serializer.instance = serializer.create(serializer.validated_data)
             serializer.instance.full_clean()
             serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    @counter.mapping.put
+    def update_counter(self, request, uuid=True, *args, **kwargs):
+        if request.user.professional != self.object.professional:
+            return Response({'error': 'Unauthorized'}, status=400)
+        counter_proposal = get_object_or_404(models.CounterProposal, proposal=uuid)
+        serializer = serializers.CounterProposalSerializer(
+            data={**request.data, 'proposal': uuid,},
+            context={'request': request},
+        )
+        if serializer.is_valid():
+            serializer.update(counter_proposal, serializer.validated_data)
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
             
