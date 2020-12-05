@@ -213,4 +213,9 @@ class JobViewSet(ViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+
+    def retrieve(self, request, uuid, *args, **kwargs):
+        job = get_object_or_404(self.queryset, uuid=uuid)
+        serializer = self.serializer_class(job, context={'request': request})
+        return Response(serializer.data)
     

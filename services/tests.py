@@ -423,3 +423,10 @@ class TestJobs(TestCase):
         self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertEqual(len(response.json()), 1)
         self.assertIn('uuid', response.json()[0])
+
+    def test_retrieve_job(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        response = self.client.get(f'/jobs/{self.proposal.job.uuid}.json')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('uuid', response.json())
+        self.assertEqual(response.json()['uuid'], str(self.proposal.job.uuid))
