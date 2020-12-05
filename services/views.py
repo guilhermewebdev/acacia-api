@@ -30,6 +30,18 @@ class ProposalsViewset(ViewSet):
         )
         return Response(serializer.data)
 
+    @sent.mapping.post
+    def sent_proposal(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request},
+            many=False
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.error_messages, status=400)
+
     @action(methods=['get'], detail=False, permission_classes=[IsProfessional])
     def received(self, request, *args, **kwargs):
         serializer = self.serializer_class(

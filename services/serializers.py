@@ -16,4 +16,10 @@ class ProposalSerializer(serializers.ModelSerializer):
             'value',
             'description',
             'registration_date',
+            'professional',
+            'client',
+        )
+        read_only_fields = (
+            'uuid',
+            'registration_date',
         )
