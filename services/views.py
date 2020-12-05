@@ -97,3 +97,9 @@ class ProposalsViewset(ViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+
+    def destroy(self, request, uuid=None, *args, **kwargs):
+        proposal = get_object_or_404(self.queryset, uuid=uuid)
+        if proposal.client == request.user and not proposal.accepted:
+            return Response({'deleted': proposal.delete()[0]})
+        return Response({'error': 'Unauthorized'}, status=403)
