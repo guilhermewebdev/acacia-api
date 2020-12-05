@@ -1,4 +1,5 @@
 from . import views
 
 def register(router):
-    router.register(r'proposals', views.ProposalsViewset, basename='Proposal')
+    router.register(r'jobs', views.JobViewSet, basename='Jobs')
+    router.register(r'proposals', views.ProposalsViewSet, basename='Proposal')

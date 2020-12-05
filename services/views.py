@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.views import IsProfessional
 from django.utils.translation import gettext as _
 
-class ProposalsViewset(ViewSet):
+class ProposalsViewSet(ViewSet):
     serializer_class = serializers.ProposalSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'
@@ -191,4 +191,11 @@ class JobViewSet(ViewSet):
             Q(client=self.request.user, proposal__client=self.request.user)
         ).all()
 
+    def list(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            self.queryset,
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
     
