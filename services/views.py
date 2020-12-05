@@ -1,6 +1,6 @@
 from django.db.models.query_utils import Q
 from django.http import request
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 from . import models, serializers
 from django.shortcuts import get_object_or_404
@@ -183,6 +183,12 @@ class JobViewSet(ViewSet):
     serializer_class = serializers.JobSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'
+    professional_actions = ('list',)
+
+    def get_permissions(self):
+        if self.action in self.professional_actions:
+            return [IsAuthenticated(), IsProfessional()]
+        return super().get_permissions()
 
     @property
     def queryset(self):
@@ -193,7 +199,7 @@ class JobViewSet(ViewSet):
 
     def list(self, request, *args, **kwargs):
         serializer = self.serializer_class(
-            self.queryset,
+            request.user.professional.jobs.all(),
             many=True,
             context={'request': request}
         )
