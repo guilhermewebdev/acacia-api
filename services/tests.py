@@ -4,6 +4,7 @@ from django.utils.timezone import timedelta
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
+from rest_framework import response
 from core.models import Professional
 from .models import CounterProposal, Proposal, Rating
 
@@ -247,3 +248,11 @@ class TestProposalREST(TestCase):
         self.assertEqual(response.status_code, 200, response.json())
         self.assertIn('uuid', response.json())
         self.assertEqual(str(self.proposal.uuid), response.json()['uuid'])
+
+    def test_accept_proposal(self):
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        response = self.client.put(f'/proposals/{self.proposal.uuid}/accept.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIn('accepted', response.json())
+        self.assertEqual(response.json()['accepted'], True)
+        
