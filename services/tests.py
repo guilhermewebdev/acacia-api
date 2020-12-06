@@ -431,6 +431,14 @@ class TestJobs(TestCase):
         self.assertIn('uuid', response.json())
         self.assertEqual(response.json()['uuid'], str(self.proposal.job.uuid))
 
+    def test_finish_job(self):
+        self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
+        response = self.client.put(f'/jobs/{self.proposal.job.uuid}/finish.json')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('uuid', response.json())
+        self.assertNotEqual(None, response.json()['end_datetime'])
+
+
     def test_rate_job(self):
         self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
         data = {'grade': 3}

@@ -224,14 +224,14 @@ class JobViewSet(ViewSet):
         return Response({'deleted': job.delete()[0]})
 
     @action(methods=['put'], detail=True)
-    def start(self, request, uuid, *args, **kwargs):
+    def finish(self, request, uuid, *args, **kwargs):
         job: models.Job = get_object_or_404(
             self.queryset,
             uuid=uuid,
-            start_datetime__isnull=True,
+            end_datetime__isnull=True,
             professional__user=request.user
         )
-        job.start()
+        job.finish()
         serializer = self.serializer_class(job, context={'request': request})
         return Response(serializer.data)
 
