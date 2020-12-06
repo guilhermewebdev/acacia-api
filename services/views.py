@@ -223,6 +223,18 @@ class JobViewSet(ViewSet):
         job: models.Job = get_object_or_404(self.queryset, Q(payment__paid=False) | Q(payment__isnull=True), uuid=uuid,)
         return Response({'deleted': job.delete()[0]})
 
+    @action(methods=['put'], detail=True)
+    def start(self, request, uuid, *args, **kwargs):
+        job: models.Job = get_object_or_404(
+            self.queryset,
+            uuid=uuid,
+            start_datetime__isnull=True,
+            professional__user=request.user
+        )
+        job.start()
+        serializer = self.serializer_class(job, context={'request': request})
+        return Response(serializer.data)
+
     @action(methods=['post'], detail=True)
     def rate(self, request, uuid, *args, **kwargs):
         if not 'grade' in request.data:
