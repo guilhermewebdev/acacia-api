@@ -47,8 +47,10 @@ class Rating(models.Model):
     def full_clean(self, *args, **kwargs) -> None:
         self.validate_user()
         return super(Rating, self).full_clean(*args, **kwargs)
+  
     class Meta:
         unique_together = ('client', 'job')
+
 class Job(models.Model):
     uuid = models.UUIDField(
         default=uuid.uuid4,

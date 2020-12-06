@@ -431,6 +431,14 @@ class TestJobs(TestCase):
         self.assertIn('uuid', response.json())
         self.assertEqual(response.json()['uuid'], str(self.proposal.job.uuid))
 
+    def test_rate_job(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        data = {'grade': 3}
+        response = self.client.post(f'/jobs/{self.proposal.job.uuid}/rate.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('uuid', response.json())
+        self.assertEqual(3, response.json()['rate'])
+
     def test_delete_job(self):
         self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
         response = self.client.delete(f'/jobs/{self.proposal.job.uuid}.json')
