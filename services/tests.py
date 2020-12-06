@@ -430,3 +430,10 @@ class TestJobs(TestCase):
         self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertIn('uuid', response.json())
         self.assertEqual(response.json()['uuid'], str(self.proposal.job.uuid))
+
+    def test_delete_job(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        response = self.client.delete(f'/jobs/{self.proposal.job.uuid}.json')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('deleted', response.json())
+        self.assertEqual(response.json()['deleted'], 1)

@@ -219,10 +219,6 @@ class JobViewSet(ViewSet):
         serializer = self.serializer_class(job, context={'request': request})
         return Response(serializer.data)
 
-    def update(self, request, uuid, *args, **kwargs):
-        job = get_object_or_404(self.queryset, uuid=uuid, payment__paid=False)
-        serializer = self.serializer_class(instance=job, data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.update(job, serializer.validated_data)
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)   
+    def destroy(self, request, uuid, *args, **kwargs):
+        job: models.Job = get_object_or_404(self.queryset, Q(payment__paid=False) | Q(payment__isnull=True), uuid=uuid,)
+        return Response({'deleted': job.delete()[0]})
