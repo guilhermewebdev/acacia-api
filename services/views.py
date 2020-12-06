@@ -222,3 +222,24 @@ class JobViewSet(ViewSet):
     def destroy(self, request, uuid, *args, **kwargs):
         job: models.Job = get_object_or_404(self.queryset, Q(payment__paid=False) | Q(payment__isnull=True), uuid=uuid,)
         return Response({'deleted': job.delete()[0]})
+
+    @action(methods=['post'], detail=True)
+    def rate(self, request, uuid, *args, **kwargs):
+        if not 'grade' in request.data:
+            return Response({'error': '"grade" field is required'}, status=400)
+        job: models.Job = get_object_or_404(
+            self.queryset,
+            uuid=uuid,
+            rate__isnull=True,
+        )
+        if job.client != request.user:
+            return Response(data={'error': 'Unauthorized'}, status=403)
+        rating = models.Rating(
+            client=request.user,
+            job=job,
+            grade=request.data.get('grade')
+        )
+        rating.full_clean()
+        rating.save()
+        serializer = self.serializer_class(job, context={'request': request})
+        return Response(serializer.data)

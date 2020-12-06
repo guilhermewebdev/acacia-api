@@ -81,6 +81,7 @@ class JobSerializer(serializers.ModelSerializer):
         many=False,
         queryset=models.Professional.objects.filter(user__is_active=True).all()
     )
+    rate = serializers.IntegerField(source='rate.grade', read_only=True)
 
     class Meta:
         model = models.Job
@@ -93,6 +94,7 @@ class JobSerializer(serializers.ModelSerializer):
             'start_datetime',
             'end_datetime',
             'registration_date',
+            'rate',
         )
         read_only_fields = (
             'uuid',

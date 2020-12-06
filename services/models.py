@@ -25,7 +25,7 @@ class Rating(models.Model):
         on_delete = models.SET(User.get_deleted_user),
         related_name='rates',
     )
-    job = models.ForeignKey(
+    job = models.OneToOneField(
         'Job',
         on_delete = models.CASCADE,
         related_name='rate',
