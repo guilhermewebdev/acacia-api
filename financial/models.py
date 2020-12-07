@@ -54,25 +54,16 @@ class Payment(models.Model):
     def postback_url(self):
         return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
-    def pay(self, card_hash, street, street_number, zipcode, state, city, neighborhood, country='BR', complementary='_'):
+    def pay(self, card_index):
         if not self.paid:
             self.__transaction = transaction.create(dict(
                 amount=int(self.value * 100),
-                card_hash=card_hash,
+                card_hash=self.client.costumer.cards[card_index],
                 customer=self.client.customer,
                 payment_method='credit_card',
                 postback_url=self.postback_url,
                 soft_descriptor=settings.PAYMENT_DESCRIPTION,
-                billing=dict(
-                    street=street,
-                    street_number=street_number,
-                    zipcode=zipcode,
-                    state=state,
-                    city=city,
-                    neighborhood=neighborhood,
-                    country=country,
-                    complementary=complementary,
-                ),
+                billing=self.costumer.get('addresses')[0],
                 items=[dict(
                     id=self.job.pk,
                     title=self.job.proposal.description,
