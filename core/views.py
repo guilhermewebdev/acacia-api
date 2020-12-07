@@ -8,8 +8,8 @@ from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import action
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -107,12 +107,24 @@ class Professionals(
         serializer = self.serializer_class(instance=professional, context={'request': request})
         return Response(serializer.data)
 
+    @action(methods=['get'], detail=True)
+    def availabilities(self, request, uuid, *args, **kwargs):
+        availabilities = models.Availability.objects.filter(
+            professional__uuid=uuid,
+            professional__user__is_active=True
+        ).all()
+        serializer = serializers.AvailabilitiesSerializer(
+            availabilities, many=True,
+        )
+        return Response(serializer.data)
+
 
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
-    auth_actions = ('customer', 'create_customer')
+    auth_actions = ('customer', 'create_customer', 'availabilities', 'put', 'get', 'patch', 'delete')
     auth_methods = ('PUT', 'GET', 'PATCH', 'DELETE')
+    allowed_actions = ('activate',)
 
     @property
     def serializer_class(self):
@@ -121,6 +133,8 @@ class Users(viewsets.ViewSet):
         return serializers.CreationUserSerializer
 
     def get_permissions(self):
+        if self.action in self.allowed_actions:
+            return (AllowAny(),)
         if self.action in self.auth_actions or self.request.method in self.auth_methods:
             return (IsAuthenticated(),)
         return super(Users, self).get_permissions()
@@ -169,7 +183,8 @@ class Users(viewsets.ViewSet):
             'token': request.data.get('token'),
         })
         if form.is_valid():
-            serializer = self.serializer_class(instance=form.save(), many=False, context={'request': request})
+            request.user = form.save()
+            serializer = self.serializer_class(instance=request.user, many=False, context={'request': request})
             return Response(data=serializer.data)
         return Response(data=form.errors, status=400, exception=form.error_class())
 
@@ -186,20 +201,6 @@ class Users(viewsets.ViewSet):
             customer = user.create_customer(**form.cleaned_data)
             return Response(customer)
         return Response(form.errors, status=400)
-
-class Availabilities(viewsets.ViewSet):
-    lookup_field = 'uuid'
-    basename = 'ProfessionalAvailabilities'
-
-    def list(self, request, professional_uuid=None, *args, **kwargs):
-        availabilities = models.Availability.objects.filter(
-            professional__uuid=professional_uuid,
-            professional__user__is_active=True
-        ).all()
-        serializer = serializers.AvailabilitiesSerializer(
-            availabilities, many=True,
-        )
-        return Response(serializer.data)
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'

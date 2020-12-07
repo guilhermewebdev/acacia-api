@@ -5,4 +5,3 @@ def register(router):
     router.register(r'professionals', views.Professionals, basename='Professional')
     router.register(r'profile', views.Users, basename='User')
     router.register(r'profile/availabilities', views.PrivateAvailabilities, basename='SelfAvailabilities')
-    router.register(r'professionals/(?P<professional_uuid>[^/.]+)/availabilities', views.Availabilities, basename='ProfessionalAvailabilities')
