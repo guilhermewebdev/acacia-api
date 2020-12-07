@@ -12,6 +12,7 @@ import re
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator as dtg
 from django.conf import settings
 from django.utils.timezone import now
+import pagarme
 
 
 class TokenGenerator(PasswordResetTokenGenerator):
@@ -291,6 +292,12 @@ class User(AbstractUser):
                 self.saved_in_pagarme = True
                 self.save()
         return self.customer
+
+    def create_card(self, card_hash):
+        return pagarme.card.create({
+            'card_hash': card_hash,
+            'costumer_id': self.costumer['id']
+        })
 
     class Meta(AbstractUser.Meta):
         swappable='AUTH_USER_MODEL'
