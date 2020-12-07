@@ -62,7 +62,7 @@ class Payment(models.Model):
         if not self.paid:
             self.__transaction = transaction.create(dict(
                 amount=int(self.value * 100),
-                card_hash=self.client.costumer.cards[card_index],
+                card_id=self.client.costumer.cards[card_index]['id'],
                 customer=self.client.customer,
                 payment_method='credit_card',
                 postback_url=self.postback_url,
@@ -83,8 +83,9 @@ class Payment(models.Model):
             ))
             if self.__transaction.get('status', None) == 'paid':
                 self.paid = True
-                self.save(update_fields=['paid'])
-        return self.paid, self.transaction
+                self.pagaerme_id = self.__transaction.get('id')
+                self.save(update_fields=['paid', 'pagarme_id'])
+        return self.transaction
 
     def validate_value(self):
         if self.value != self.job.value:
