@@ -252,7 +252,7 @@ class AvailabilityForm(forms.ModelForm):
         ]
 
 
-class CostumerForm(forms.Form):
+class CustomerForm(forms.Form):
     cpf = forms.CharField(
         max_length=14,
         required=True,

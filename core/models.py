@@ -213,7 +213,7 @@ class User(AbstractUser):
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
-    __costumer = None
+    __customer = None
 
     @property
     def is_professional(self):
@@ -221,16 +221,16 @@ class User(AbstractUser):
     
     @property
     def customer(self):
-        if self.saved_in_pagarme and not self.__costumer:
-            self.__costumer = customer.find_by({
+        if self.saved_in_pagarme and not self.__customer:
+            self.__customer = customer.find_by({
                 'id': self.pagarme_id
             })
-        return self.__costumer
+        return self.__customer
 
     @property
     def cards(self):
         return pagarme.card.find_by({
-            'costumer_id': self.costumer['id'],
+            'customer_id': self.customer['id'],
         })
 
     @staticmethod
@@ -298,21 +298,21 @@ class User(AbstractUser):
                     'ddd': self.cellphone_ddd or self.telephone_ddd
                 }
             })
-            if 'id' in self.__customer and self.__costumer.get('id') != None:
+            if 'id' in self.__customer and self.__customer.get('id') != None:
                 self.saved_in_pagarme = True
-                self.pagarme_id = self.__costumer.get('id')
+                self.pagarme_id = self.__customer.get('id')
                 self.save()
         return self.customer
 
     def create_card(self, card_hash):
         return pagarme.card.create({
             'card_hash': card_hash,
-            'costumer_id': self.costumer['id']
+            'customer_id': self.customer['id']
         })
 
-    def validate_costumer(self):
+    def validate_customer(self):
         if not self.saved_in_pagarme or not self.pagarme_id:
-            raise ValidationError('You need create a costumer')
+            raise ValidationError('You need create a customer')
 
 
     def validate_cards(self):

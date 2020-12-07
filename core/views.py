@@ -173,6 +173,12 @@ class Users(viewsets.ViewSet):
             return Response(data=serializer.data)
         return Response(data=form.errors, status=400, exception=form.error_class())
 
+    @action(methods=['get'], detail=False)
+    def costumer(self, request, *args, **kwargs):
+        user: models.User = request.user
+        return Response(user.customer)
+
+    
 
 class Availabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
