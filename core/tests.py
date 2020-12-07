@@ -267,7 +267,7 @@ class TestUserREST(TestCase):
     
     def test_get_profile(self):
         client.login(username=self.user.email, password='abda1234')
-        response = client.get('/users/profile.json')
+        response = client.get('/profile.json')
         data = response.json()
         self.assertIn('uuid', data)
         self.assertEqual(data['uuid'], str(self.user.uuid))
@@ -280,7 +280,7 @@ class TestUserREST(TestCase):
             'password1': 'abda1234',
             'password2': 'abda1234',
         }
-        response = client.post('/users.json', data=data)
+        response = client.post('/profile.json', data=data)
         json = response.json()
         self.assertIn('uuid', json)
         self.assertEqual(json['is_active'], False)
@@ -291,7 +291,7 @@ class TestUserREST(TestCase):
             'full_name': 'Grande Pequeno',
             'email': 'teste@gmail.com',
         }
-        response = client.put(f'/users/profile.json', data=data, content_type='application/json')
+        response = client.put(f'/profile.json', data=data, content_type='application/json')
         json = response.json()
         self.assertEqual(response.status_code, 200, msg=str(json))
         self.assertIn('uuid', json)
@@ -315,7 +315,7 @@ class TestUserREST(TestCase):
                 'coren': self.professional.coren,
             }
         }
-        response = client.put(f'/users/profile.json', data=data, content_type='application/json')
+        response = client.put(f'/profile.json', data=data, content_type='application/json')
         json = response.json()
         self.assertEqual(response.status_code, 200, msg=str(json))
         self.assertIn('uuid', json)
@@ -336,7 +336,7 @@ class TestUserREST(TestCase):
         }
         client.login(username=user.email, password='abda1234')
         response = client.delete(
-            '/users/profile.json',
+            '/profile.json',
             data=data,
             content_type='application/json'
         )
@@ -353,14 +353,13 @@ class TestUserREST(TestCase):
             'password2': 'abda143501',
         }
         response = client.patch(
-            '/users/profile.json',
+            '/profile.json',
             data=data,
             content_type='application/json'
         )
-        json = response.json()
+        self.assertEqual(response.status_code, 200, msg=response.content)
         user = User.objects.get(uuid=str(self.user.uuid))
-        self.assertIn('uuid', json)
-        self.assertEqual(response.status_code, 200)
+        self.assertIn('uuid', response.json())
         self.assertTrue(user.check_password(data['password1']))
 
     def test_activate_user(self):
@@ -373,13 +372,13 @@ class TestUserREST(TestCase):
             'token': account_activation_token.make_token(user)
         }
         response = client.put(
-            f'/users/{user.uuid}/',
+            f'/profile/{user.uuid}/activate.json',
             data=data,
             content_type='application/json'
         )
-        json = response.json()
-        self.assertIn('is_active', json)
-        self.assertEqual(json['is_active'], True)
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('is_active', response.json())
+        self.assertEqual(response.json()['is_active'], True)
 
     def test_list_self_availabilities(self):
         availability = Availability.objects.create(
@@ -389,7 +388,7 @@ class TestUserREST(TestCase):
         )
         availability.save()
         client.login(username=self.professional.user.email, password='abda1234')
-        response = client.get('/users/profile/availabilities.json')
+        response = client.get('/profile/availabilities.json')
         json = response.json()
         self.assertEqual(json[0]['uuid'], str(availability.uuid))
 
@@ -399,7 +398,7 @@ class TestUserREST(TestCase):
             'start_datetime': (now() + timedelta(days=1)).isoformat(),
             'end_datetime': (now() + timedelta(days=1, hours=3)).isoformat(),
         }
-        response = client.post('/users/profile/availabilities.json', data=data, content_type='application/json')
+        response = client.post('/profile/availabilities.json', data=data, content_type='application/json')
         json = response.json()
         self.assertIn('uuid', json)
 
@@ -415,7 +414,7 @@ class TestUserREST(TestCase):
             'start_datetime': (now() + timedelta(days=2)).isoformat(),
             'end_datetime': (now() + timedelta(days=2, hours=3)).isoformat(),
         }
-        response = client.put(f'/users/profile/availabilities/{availability.uuid}.json', data=data, content_type='application/json')
+        response = client.put(f'/profile/availabilities/{availability.uuid}.json', data=data, content_type='application/json')
         json = response.json()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -431,7 +430,7 @@ class TestUserREST(TestCase):
             end_datetime=(now() + timedelta(days=1, hours=2)),
         )
         availability.save()
-        response = client.delete(f'/users/profile/availabilities/{availability.uuid}.json')
+        response = client.delete(f'/profile/availabilities/{availability.uuid}.json')
         json = response.json()
         self.assertEqual(json,{
             'deleted': 1
@@ -445,7 +444,7 @@ class TestUserREST(TestCase):
             end_datetime=(now() + timedelta(days=1, hours=2)),
         )
         availability.save()
-        response = client.get(f'/users/profile/availabilities/{availability.uuid}.json')
+        response = client.get(f'/profile/availabilities/{availability.uuid}.json')
         self.assertEqual(response.status_code, 200)
     
     def test_login(self):
@@ -462,6 +461,6 @@ class TestUserREST(TestCase):
         token = response.json().get('access')
         api_client = APIClient()
         api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-        profile = api_client.get('/users/profile.json')
+        profile = api_client.get('/profile.json')
         self.assertEqual(profile.status_code, 200, profile.json())
         self.assertEqual(profile.json()['uuid'], str(self.professional.user.uuid))

@@ -124,30 +124,28 @@ class Users(viewsets.ViewSet):
             return (IsAuthenticated(),)
         return super(Users, self).get_permissions()
 
-    @action(methods=['get'], detail=False)
-    def profile(self, request, uuid=None, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         serializer = self.serializer_class(instance=request.user, many=False, context={'request': request})
         return Response(data=serializer.data)
 
-    @profile.mapping.put
-    def profile_update(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data={
-            **request.data,
-        }, context={'request': request}, instance=request.user)
+    def put(self, request, *args, **kwargs):
+        serializer = serializers.PrivateUserSerializer(
+            data=request.data,
+            context={'request': request},
+            instance=request.user
+        )
         if serializer.is_valid():
             serializer.update(request.user, serializer.validated_data)
             return Response(data=serializer.data)
         return Response(data=serializer.errors, status=400)
 
-    @profile.mapping.delete
-    def profile_delete(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         form = forms.UserDeletionForm(data=request.data, instance=request.user)
         if form.is_valid():
             return Response(data={'deleted': form.save()})
         return Response(data=form.errors, status=400, exception=form.error_class())
 
-    @profile.mapping.patch
-    def change_password(self, request, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):
         form = forms.PasswordChangeForm(data=request.data, instance=request.user)
         if form.is_valid():
             form.save()
@@ -163,7 +161,8 @@ class Users(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(data=form.errors, status=400, exception=form.error_class())
 
-    def update(self, request, uuid=None, *args, **kwargs):
+    @action(methods=['put'], detail=True)
+    def activate(self, request, uuid=None, *args, **kwargs):
         form = forms.UserActivationForm(data={
             'uuid': uuid,
             'token': request.data.get('token'),
@@ -174,11 +173,18 @@ class Users(viewsets.ViewSet):
         return Response(data=form.errors, status=400, exception=form.error_class())
 
     @action(methods=['get'], detail=False)
-    def costumer(self, request, *args, **kwargs):
+    def customer(self, request, *args, **kwargs):
         user: models.User = request.user
         return Response(user.customer)
 
-    
+    @customer.mapping.post
+    def create_customer(self, request, *args, **kwargs):
+        form = forms.CustomerForm(data=request.data)
+        user: models.User = request.user
+        if form.is_valid():
+            customer = user.create_customer(**form.cleaned_data)
+            return Response(customer)
+        return Response(form.errors, status=400)
 
 class Availabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
