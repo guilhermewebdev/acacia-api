@@ -1,5 +1,6 @@
 from django.db.models.query_utils import Q
 from django.http import request
+from rest_framework import response
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 from . import models, serializers
@@ -8,7 +9,8 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAuthenticated
 from core.views import IsProfessional
 from django.utils.translation import gettext as _
-
+import financial.models
+import financial.serializers
 class ProposalsViewSet(ViewSet):
     serializer_class = serializers.ProposalSerializer
     permission_classes = [IsAuthenticated]
@@ -229,7 +231,6 @@ class JobViewSet(ViewSet):
             self.queryset,
             uuid=uuid,
             end_datetime__isnull=True,
-            professional__user=request.user
         )
         job.finish()
         serializer = self.serializer_class(job, context={'request': request})
@@ -255,3 +256,21 @@ class JobViewSet(ViewSet):
         rating.save()
         serializer = self.serializer_class(job, context={'request': request})
         return Response(serializer.data)
+
+    @action(methods=['post'], detail=True)
+    def pay(self, request, uuid, *args, **kwargs):
+        job = get_object_or_404(
+            self.queryset,
+            uuid=uuid,
+            payment__isnull=True,
+            client=request.user,
+        )
+        serializer = financial.serializers.PaymentSerializer(
+            request.data,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            serializer.instance.pay(serializer.validated_data.get('card_index'))
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)

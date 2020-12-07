@@ -38,7 +38,7 @@ class Payment(models.Model):
     paid = models.BooleanField(
         default=False,
     )
-    pagaerme_id = models.IntegerField(
+    pagarme_id = models.IntegerField(
         null=True,
         blank=True,
     )
@@ -58,7 +58,7 @@ class Payment(models.Model):
     def postback_url(self):
         return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
-    def pay(self, card_index):
+    def pay(self, card_index=0):
         self.client.validate_costumer()
         self.client.validate_cards()
         if not self.paid:
@@ -85,7 +85,7 @@ class Payment(models.Model):
             ))
             if self.__transaction.get('status', None) == 'paid':
                 self.paid = True
-                self.pagaerme_id = self.__transaction.get('id')
+                self.pagarme_id = self.__transaction.get('id')
                 self.save(update_fields=['paid', 'pagarme_id'])
         return self.transaction
 
