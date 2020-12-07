@@ -218,10 +218,16 @@ class User(AbstractUser):
     @property
     def customer(self):
         if self.saved_in_pagarme and not self.__costumer:
-            return customer.find_by({
+            self.__costumer = customer.find_by({
                 'email': self.email
-            })
+            })[0]
         return self.__costumer
+
+    @property
+    def cards(self):
+        return pagarme.card.find_by({
+            'costumer_id': self.costumer['id'],
+        })
 
     @staticmethod
     def get_deleted_user(cls):
