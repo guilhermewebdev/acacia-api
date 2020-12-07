@@ -206,6 +206,9 @@ class User(AbstractUser):
     is_active = models.BooleanField(
         default=False
     )
+    pagarme_id = models.IntegerField(
+        null=True,
+    )
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
@@ -219,8 +222,8 @@ class User(AbstractUser):
     def customer(self):
         if self.saved_in_pagarme and not self.__costumer:
             self.__costumer = customer.find_by({
-                'email': self.email
-            })[0]
+                'id': self.pagarme_id
+            })
         return self.__costumer
 
     @property
@@ -294,8 +297,9 @@ class User(AbstractUser):
                     'ddd': ddd
                 }
             })
-            if self.__customer['id'] is not None:
+            if 'id' in self.__customer and self.__costumer.get('id') != None:
                 self.saved_in_pagarme = True
+                self.pagarme_id = self.__costumer.get('id')
                 self.save()
         return self.customer
 
