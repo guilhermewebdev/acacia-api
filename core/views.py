@@ -1,3 +1,4 @@
+from os import stat
 from core.models import Availability
 from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
@@ -195,12 +196,10 @@ class Users(viewsets.ViewSet):
 
     @customer.mapping.post
     def create_customer(self, request, *args, **kwargs):
-        form = forms.CustomerForm(data=request.data)
-        user: models.User = request.user
-        if form.is_valid():
-            customer = user.create_customer(**form.cleaned_data)
-            return Response(customer)
-        return Response(form.errors, status=400)
+        if not 'cpf' in request.data:
+            return Response({'error': '"cpf" field is required'}, status=400)
+        customer = request.user.create_customer(request.data.get('cpf'))
+        return Response(customer)
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'

@@ -233,6 +233,18 @@ class User(AbstractUser):
             'customer_id': self.customer['id'],
         })
 
+    @property
+    def full_cellphone(self):
+        if self.cellphone and self.cellphone_ddd:
+            return f'+55{self.cellphone_ddd}{self.cellphone}'
+        return None
+
+    @property
+    def full_telephone(self):
+        if self.telephone and self.telephone_ddd:
+            return f'+55{self.telephone_ddd}{self.telephone}'
+        return None
+
     @staticmethod
     def get_deleted_user(cls):
         return cls.object.get(email='deleted@user.com')
@@ -279,25 +291,28 @@ class User(AbstractUser):
             self.save(update_fields=['is_active'])
         return self.is_active
 
-    def create_customer(self, cpf, zip_code, neighborhood, street, street_number):
+    def create_customer(self, cpf):
         if not self.saved_in_pagarme:
             validate_cpf(cpf)
             unmasked_cpf = re.sub('[^0-9]', '', cpf)
-            self.__customer = customer.create( {
-                'email': self.email,
+            data = {
                 'name': self.full_name,
-                'document_number': unmasked_cpf,
-                'address': {
-                    'zipcode': zip_code,
-                    'neighborhood': neighborhood,
-                    'street': street,
-                    'street_number': street_number,
-                },
-                'phone': {
-                    'number': self.cellphone or self.telephone,
-                    'ddd': self.cellphone_ddd or self.telephone_ddd
-                }
-            })
+                'email': self.email,
+                'external_id': str(self.uuid),
+                'country': 'br',
+                'birthday': self.born.isoformat(),
+                'type': 'individual',
+                'phone_numbers': [],
+                'documents': [{
+                    'type': 'cpf',
+                    'number': unmasked_cpf,
+                }]
+            }
+            if self.full_cellphone:
+                data['phone_numbers'].append(self.full_cellphone)
+            if self.full_telephone:
+                data['phone_numbers'].append(self.full_telephone)
+            self.__customer = customer.create(data)
             if 'id' in self.__customer and self.__customer.get('id') != None:
                 self.saved_in_pagarme = True
                 self.pagarme_id = self.__customer.get('id')

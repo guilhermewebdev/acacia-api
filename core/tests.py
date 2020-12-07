@@ -243,6 +243,10 @@ class TestUserREST(TestCase):
             email='test@tst.com',
             password='abda1234',
             is_active=True,
+            cellphone='988887777',
+            cellphone_ddd='55',
+            full_name='Crocodilo Dande',
+            born=(now() - timedelta(days=10000)),
         )
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
@@ -464,3 +468,16 @@ class TestUserREST(TestCase):
         profile = api_client.get('/profile.json')
         self.assertEqual(profile.status_code, 200, profile.json())
         self.assertEqual(profile.json()['uuid'], str(self.professional.user.uuid))
+
+    def test_create_customer(self):
+        client.login(username=self.user.email, password='abda1234')
+        data = {
+            'cpf': '829.354.190-30',
+            'zip_code': '57680-970',
+            'neighborhood': 'Centro',
+            'street': 'Rua Vereador Artedorio Pinto Dâmaso',
+            'street_number': 30
+        }
+        response = client.post('/profile/customer.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('id', response.json(), msg=response.json())

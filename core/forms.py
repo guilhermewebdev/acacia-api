@@ -263,7 +263,7 @@ class CustomerForm(forms.Form):
         validators=[RegexValidator(regex='^[0-9]{5}-?[0-9]{3}$')],
         required=True,
     )
-    neighboard = forms.CharField(
+    neighborhood = forms.CharField(
         required=True,
     )
     street = forms.CharField(
