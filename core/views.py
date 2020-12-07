@@ -111,16 +111,17 @@ class Professionals(
 class Users(viewsets.ViewSet):
     model = models.User
     lookup_field = 'uuid'
-    auth_actions = ('profile', 'profile_update', 'profile_delete', 'change_password')
-    
+    auth_actions = ('customer', 'create_customer')
+    auth_methods = ('PUT', 'GET', 'PATCH', 'DELETE')
+
     @property
     def serializer_class(self):
-        if self.action in self.auth_actions:
+        if self.action in self.auth_actions or self.request.method in self.auth_methods:
             return serializers.PrivateUserSerializer
         return serializers.CreationUserSerializer
 
     def get_permissions(self):
-        if self.action in self.auth_actions:
+        if self.action in self.auth_actions or self.request.method in self.auth_methods:
             return (IsAuthenticated(),)
         return super(Users, self).get_permissions()
 
@@ -129,7 +130,7 @@ class Users(viewsets.ViewSet):
         return Response(data=serializer.data)
 
     def put(self, request, *args, **kwargs):
-        serializer = serializers.PrivateUserSerializer(
+        serializer = self.serializer_class(
             data=request.data,
             context={'request': request},
             instance=request.user
