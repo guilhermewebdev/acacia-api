@@ -272,3 +272,18 @@ class CustomerForm(forms.Form):
     street_number = forms.IntegerField(
         required=True
     )
+
+
+class CardForm(forms.Form):
+    card_hash = forms.CharField(required=False)
+    card_number = forms.CharField(required=False)
+    card_expiration_date = forms.CharField(required=False)
+    card_holder_name = forms.CharField(required=False)
+    card_cvv = forms.CharField(required=False)
+
+    @property
+    def full_cleaned_data(self):
+        return dict(filter(
+            lambda item: bool(item[1]),
+            self.cleaned_data.items()
+        ))

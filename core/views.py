@@ -205,6 +205,14 @@ class Users(viewsets.ViewSet):
     def cards(self, request, *args, **kwargs):
         return Response(request.user.cards)
 
+    @cards.mapping.post
+    def create_card(self, request, *args, **kwargs):
+        form = forms.CardForm(data=request.data)
+        if form.is_valid():
+            data = request.user.create_card(form.full_cleaned_data)
+            return Response(data=data)
+        return Response(form.errors, status=400)
+
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
     permission_classes = [IsAuthenticated, IsProfessional]

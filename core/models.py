@@ -319,10 +319,10 @@ class User(AbstractUser):
                 self.save(update_fields=['saved_in_pagarme', 'pagarme_id'])
         return self.customer
 
-    def create_card(self, card_hash):
+    def create_card(self, card):
         return pagarme.card.create({
-            'card_hash': card_hash,
-            'customer_id': self.customer['id']
+            **card,
+            'customer_id': self.pagarme_id,
         })
 
     def validate_customer(self):
