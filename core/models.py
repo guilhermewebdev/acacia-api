@@ -230,7 +230,7 @@ class User(AbstractUser):
     @property
     def cards(self):
         return pagarme.card.find_by({
-            'customer_id': self.customer['id'],
+            'customer_id': self.pagarme_id,
         })
 
     @property
