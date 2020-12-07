@@ -192,7 +192,7 @@ class Users(viewsets.ViewSet):
     @action(methods=['get'], detail=False)
     def customer(self, request, *args, **kwargs):
         user: models.User = request.user
-        return Response(user.customer)
+        return Response(user.customer, content_type='application/json')
 
     @customer.mapping.post
     def create_customer(self, request, *args, **kwargs):
@@ -200,6 +200,10 @@ class Users(viewsets.ViewSet):
             return Response({'error': '"cpf" field is required'}, status=400)
         customer = request.user.create_customer(request.data.get('cpf'))
         return Response(customer)
+
+    @action(methods=['get'], detail=False)
+    def cards(self, request, *args, **kwargs):
+        return Response(request.user.cards)
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'

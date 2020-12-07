@@ -246,7 +246,7 @@ class TestUserREST(TestCase):
             cellphone='988887777',
             cellphone_ddd='55',
             full_name='Crocodilo Dande',
-            born=(now() - timedelta(days=10000)),
+            born=(now() - timedelta(days=10000)).date(),
         )
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
@@ -480,4 +480,14 @@ class TestUserREST(TestCase):
         }
         response = client.post('/profile/customer.json', data=data, content_type='application/json')
         self.assertEqual(response.status_code, 200, msg=response.content)
-        self.assertIn('id', response.json(), msg=response.json())
+        self.assertEqual(response.get('Content-Type'), 'application/json', msg=response.content)
+        self.assertIn('id', response.json())
+
+    def test_get_customer(self):
+        client.login(username=self.user.email, password='abda1234')
+        self.user.create_customer(cpf='829.354.190-30')
+        print(self.user.pagarme_id)
+        response = client.get('/profile/customer.json')
+        self.assertEqual(response.get('Content-Type'), 'application/json', msg=response.content)
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('id', response.json())

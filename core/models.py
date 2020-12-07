@@ -13,6 +13,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_toke
 from django.conf import settings
 from django.utils.timezone import now
 import pagarme
+from pagarme.resources import handler_request
 
 
 class TokenGenerator(PasswordResetTokenGenerator):
@@ -209,6 +210,7 @@ class User(AbstractUser):
     pagarme_id = models.IntegerField(
         null=True,
         blank=True,
+        unique=True,
     )
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
@@ -221,10 +223,8 @@ class User(AbstractUser):
     
     @property
     def customer(self):
-        if self.saved_in_pagarme and not self.__customer:
-            self.__customer = customer.find_by({
-                'id': self.pagarme_id
-            })
+        if self.saved_in_pagarme and self.__customer == None:
+            self.__customer = handler_request.get(f'https://api.pagar.me/1/customers/{self.pagarme_id}', {})
         return self.__customer
 
     @property
@@ -313,10 +313,10 @@ class User(AbstractUser):
             if self.full_telephone:
                 data['phone_numbers'].append(self.full_telephone)
             self.__customer = customer.create(data)
-            if 'id' in self.__customer and self.__customer.get('id') != None:
+            if 'id' in self.__customer:
                 self.saved_in_pagarme = True
-                self.pagarme_id = self.__customer.get('id')
-                self.save()
+                self.pagarme_id = self.__customer['id']
+                self.save(update_fields=['saved_in_pagarme', 'pagarme_id'])
         return self.customer
 
     def create_card(self, card_hash):
