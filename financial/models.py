@@ -59,6 +59,8 @@ class Payment(models.Model):
         return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
     def pay(self, card_index):
+        self.client.validate_costumer()
+        self.client.validate_cards()
         if not self.paid:
             self.__transaction = transaction.create(dict(
                 amount=int(self.value * 100),

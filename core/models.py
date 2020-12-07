@@ -310,6 +310,15 @@ class User(AbstractUser):
             'costumer_id': self.costumer['id']
         })
 
+    def validate_costumer(self):
+        if not self.saved_in_pagarme or not self.pagarme_id:
+            raise ValidationError('You need create a costumer')
+
+
+    def validate_cards(self):
+        if not self.cards or self.cards == []:
+            raise ValidationError('You need create a cart')
+
     class Meta(AbstractUser.Meta):
         swappable='AUTH_USER_MODEL'
 
