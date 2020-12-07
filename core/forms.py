@@ -5,6 +5,7 @@ from django.contrib.auth.forms import (
     PasswordResetForm as PRF,
 )
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.utils.text import capfirst
 from .models import Availability, User, Professional, validate_cpf
 from django.utils.translation import gettext as _
@@ -249,3 +250,25 @@ class AvailabilityForm(forms.ModelForm):
             'weekly_recurrence',
             'professional',
         ]
+
+
+class CostumerForm(forms.Form):
+    cpf = forms.CharField(
+        max_length=14,
+        required=True,
+        validators=[validate_cpf]
+    )
+    zip_code = forms.CharField(
+        max_length=9,
+        validators=[RegexValidator(regex='^[0-9]{5}-?[0-9]{3}$')],
+        required=True,
+    )
+    neighboard = forms.CharField(
+        required=True,
+    )
+    street = forms.CharField(
+        required=True,
+    )
+    street_number = forms.IntegerField(
+        required=True
+    )

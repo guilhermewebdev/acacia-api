@@ -279,7 +279,7 @@ class User(AbstractUser):
             self.save(update_fields=['is_active'])
         return self.is_active
 
-    def create_customer(self, cpf, zip_code, neighborhood, street, street_number, phone, ddd):
+    def create_customer(self, cpf, zip_code, neighborhood, street, street_number):
         if not self.saved_in_pagarme:
             validate_cpf(cpf)
             unmasked_cpf = re.sub('[^0-9]', '', cpf)
@@ -294,8 +294,8 @@ class User(AbstractUser):
                     'street_number': street_number,
                 },
                 'phone': {
-                    'number': phone,
-                    'ddd': ddd
+                    'number': self.cellphone or self.telephone,
+                    'ddd': self.cellphone_ddd or self.telephone_ddd
                 }
             })
             if 'id' in self.__customer and self.__costumer.get('id') != None:
