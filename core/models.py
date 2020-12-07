@@ -208,6 +208,7 @@ class User(AbstractUser):
     )
     pagarme_id = models.IntegerField(
         null=True,
+        blank=True,
     )
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']

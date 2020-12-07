@@ -38,6 +38,10 @@ class Payment(models.Model):
     paid = models.BooleanField(
         default=False,
     )
+    pagaerme_id = models.IntegerField(
+        null=True,
+        blank=True,
+    )
     __transaction = None
 
     @property
