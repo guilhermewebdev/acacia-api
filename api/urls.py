@@ -36,3 +36,9 @@ urlpatterns = [
     path('postback/professional/<uuid:str>/', professional_postback),
     path('', include(router.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+
+if settings.DEBUG:
+    urlpatterns.append(
+        path('api-auth/', include('rest_framework.urls')),
+    )
