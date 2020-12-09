@@ -1,5 +1,5 @@
+from functools import reduce
 from django.core.exceptions import ValidationError
-from services.models import Job
 from core.models import Professional
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -28,7 +28,7 @@ class Payment(models.Model):
     )
     value = models.FloatField()
     job = models.OneToOneField(
-        Job,
+        'services.Job',
         on_delete=models.CASCADE,
         related_name='payment',
     )
@@ -59,30 +59,34 @@ class Payment(models.Model):
         return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
     def pay(self, card_index=0):
-        self.client.validate_costumer()
+        self.client.validate_customer()
         self.client.validate_cards()
         if not self.paid:
-            self.__transaction = transaction.create(dict(
-                amount=int(self.value * 100),
-                card_id=self.client.costumer.cards[card_index]['id'],
-                customer=self.client.customer,
-                payment_method='credit_card',
-                postback_url=self.postback_url,
-                soft_descriptor=settings.PAYMENT_DESCRIPTION,
-                billing=self.costumer.get('addresses')[0],
-                items=[dict(
-                    id=self.job.pk,
-                    title=self.job.proposal.description,
-                    unit_price=self.value,
-                    quantity=1,
-                    tangible=False,
-                    category='Services',
-                    date=f'{self.job.start_datetime.year}-{self.job.start_datetime.month}-{self.job.start_datetime.day}'
-                )],
-                metadata=dict(
-                    payment=self.uuid,
-                )
-            ))
+            data = {
+                'amount': int(self.value * 100),
+                'card_id': self.client.cards[card_index]['id'],
+                'customer': self.client.customer,
+                'payment_method': 'credit_card',
+                'async': False,
+                'postback_url': self.postback_url,
+                'soft_descriptor': settings.PAYMENT_DESCRIPTION,
+                'items': [{
+                    'id': str(self.job.uuid),
+                    'title': self.job.proposal.description,
+                    'unit_price': int(self.value * 100),
+                    'quantity': 1,
+                    'tangible': False,
+                    'category': 'Services',
+                    'date': self.job.start_datetime.date().isoformat()
+                }],
+                'metadata': {
+                    'payment': str(self.uuid),
+                    'job': str(self.job.uuid),
+                    'professional': self.professional.user.full_name,
+                    'client': self.client.full_name,
+                }
+            }
+            self.__transaction = transaction.create(data)
             if self.__transaction.get('status', None) == 'paid':
                 self.paid = True
                 self.pagarme_id = self.__transaction.get('id')
