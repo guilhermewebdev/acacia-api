@@ -4,7 +4,7 @@ from django.forms.models import model_to_dict
 from django.http.request import HttpRequest
 from django.test import TestCase, Client
 from rest_framework import response
-from .models import Availability, User, Professional, account_activation_token
+from .models import Address, Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
 from rest_framework.test import APIClient
 
@@ -123,13 +123,18 @@ class ProfessionalTestREST(TestCase):
                 email='test@tstd.com',
                 password='abda1234',
                 is_active=True,
-                full_name='Bernardo Lagosta'
+                full_name='Bernardo Lagosta',
+                address=Address(
+                    city='Longa vida',
+                    state='MG',
+                )
             ),
             avg_price=99,
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
         )
+        self.professional.user.address.save()
         self.professional.user.save()
         self.professional.save()
 
@@ -145,7 +150,7 @@ class ProfessionalTestREST(TestCase):
             'is_active': self.professional.user.is_active,
             'avg_price': float(self.professional.avg_price),
             'state': 'MG',
-            'city': self.professional.city,
+            'city': self.professional.user.address.city,
             'occupation': self.professional.occupation,
             'skills': self.professional.skills,
             'avg_rating': self.professional.avg_rating,

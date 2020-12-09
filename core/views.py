@@ -80,13 +80,13 @@ class Professionals(
         filter_by_attrs = verify_dict(dict(
             user__is_active=True,
             skills__overlap=filters.get('skills'),
-            city__search=list(filters.get('city', [None]))[0],
-            state=list(filters.get('state', [None]))[0],
+            user__address__city__search=list(filters.get('city', [None]))[0],
+            user__address__state=list(filters.get('state', [None]))[0],
             occupation=list(filters.get('occupation', [None]))[0],
             search=filters.get('search', [None])[0],
         ))
         queryset = self.queryset.annotate(
-                search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')
+                search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email', 'user__address__city')
             ).filter(
             Q(**filter_by_date) | Q(**filter_by_time) | 
             Q(**filter_by_week_day) | Q(**filter_by_day),

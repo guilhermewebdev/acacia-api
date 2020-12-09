@@ -45,6 +45,8 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     cpf = serializers.CharField(write_only=True)
     address = AddressSerializer(write_only=True)
     coren = serializers.CharField(write_only=True)
+    city = serializers.CharField(source='user.address.city', read_only=True)
+    state = serializers.CharField(source='user.address.state', read_only=True)
     url = serializers.SerializerMethodField('get_url')
 
     def get_url(self, obj):
@@ -96,6 +98,8 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'avatar',
             'cpf',
             'about',
+            'city',
+            'state',
             'avg_price',
             'occupation',
             'skills',
