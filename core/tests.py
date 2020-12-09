@@ -125,13 +125,7 @@ class ProfessionalTestREST(TestCase):
                 is_active=True,
                 full_name='Bernardo Lagosta'
             ),
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
             avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
@@ -228,13 +222,7 @@ class TestUserREST(TestCase):
                 is_active=True,
                 full_name='Bernardo Lagosta'
             ),
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
             avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'

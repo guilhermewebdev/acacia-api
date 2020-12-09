@@ -96,12 +96,11 @@ class Professionals(
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        form = forms.ProfessionalCreationForm(data=request.data)
-        if form.is_valid():
-            professional = form.save()
-            serializer = self.serializer_class(instance=professional, many=False, context={'request': request})
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(serializer.data)
-        return Response(exception=form.errors, status=400)
+        return Response(exception=serializer.errors, status=400)
 
     def retrieve(self, request, uuid=None, *args, **kwargs):
         professional = get_object_or_404(self.queryset, uuid=uuid)

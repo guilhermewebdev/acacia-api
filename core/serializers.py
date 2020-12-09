@@ -79,6 +79,11 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
         )
         self.instance.full_clean()
         return self.instance
+
+    def save(self, **kwargs):
+        super().save(**kwargs)
+        self.instance.user.confirm_email()
+
     class Meta:
         model = models.Professional
         fields = (
