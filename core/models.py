@@ -150,6 +150,8 @@ class UserManager(UM):
 
         return self._create_user(email, password, **extra_fields)
 
+
+
 class User(AbstractUser):
     objects = UserManager()
     uuid = models.UUIDField(
@@ -212,10 +214,16 @@ class User(AbstractUser):
         blank=True,
         unique=True,
     )
+    cpf = models.CharField(
+        max_length=14,
+        validators=[validate_cpf]
+    )
+   
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
     __customer = None
+    __cards = []
 
     @property
     def is_professional(self):
@@ -229,9 +237,11 @@ class User(AbstractUser):
 
     @property
     def cards(self):
-        return pagarme.card.find_by({
-            'customer_id': self.pagarme_id,
-        })
+        if not self.__cards:
+            self.__cards = handler_request.get(
+                f'https://api.pagar.me/1/cards?customer_id={self.pagarme_id}'
+            )
+        return self.__cards
 
     @property
     def full_cellphone(self):
@@ -331,12 +341,48 @@ class User(AbstractUser):
 
 
     def validate_cards(self):
-        if not self.cards or self.cards == []:
+        if not self.cards:
             raise ValidationError('You need create a cart')
 
     class Meta(AbstractUser.Meta):
         swappable='AUTH_USER_MODEL'
 
+
+class Address(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='address',
+    )
+    street = models.CharField( 
+        max_length=200,
+    )
+    street_number = models.CharField(
+        max_length=30,
+    )
+    zipcode = models.CharField(
+        max_length=9,
+        validators=[RegexValidator(regex='^[0-9]{5}-?[0-9]{3}$')],
+    )
+    state = models.CharField(
+        choices=STATES,
+        validators=[ValidateChoices(STATES)],
+        max_length=2,
+    )
+    city = models.CharField(
+        max_length=100,
+    )
+    neighborhood = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+    )
+    complementary = models.CharField(
+        max_length=200,
+    )
+
+    def __str__(self) -> str:
+        return f'{self.street}, {self.street_number}, {self.neighborhood}, {self.city} - {self.state}'
 
 class Availability(models.Model):
     RECURRENCES = (
@@ -422,28 +468,6 @@ class Professional(models.Model):
         default=0,
         blank=True,
         null=True,
-    )
-    state = models.CharField(
-        choices=STATES,
-        validators=[ValidateChoices(STATES)],
-        max_length=2,
-    )
-    city = models.CharField(
-        max_length=100,
-    )
-    address = models.CharField(
-        max_length=200,
-    )
-    zip_code = models.CharField(
-        max_length=9,
-        validators=[RegexValidator(regex='^[0-9]{5}-?[0-9]{3}$')],
-    )
-    cpf = models.CharField(
-        max_length=14,
-        validators=[validate_cpf]
-    )
-    rg = models.CharField(
-        max_length=12,
     )
     occupation = models.CharField(
         max_length=2,
