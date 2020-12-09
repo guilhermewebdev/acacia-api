@@ -98,7 +98,7 @@ class Professionals(
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.create(serializer.validated_data)
+            serializer.instance = serializer.create(serializer.validated_data)
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)

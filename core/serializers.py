@@ -37,7 +37,7 @@ class AddressSerializer(serializers.ModelSerializer):
 
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     full_name = serializers.CharField(source='user.full_name', max_length=200)
-    email = serializers.EmailField(source='user.email')
+    email = serializers.EmailField(source='user.email', required=True)
     avatar = serializers.ImageField(source='user.avatar', read_only=True)
     is_active = serializers.BooleanField(source='user.is_active', read_only=True)
     password1 = serializers.CharField(write_only=True, required=True)
@@ -64,8 +64,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')
         user:models.User = models.User.objects.create_user(
-            email=validated_data.pop('email'),
-            full_name=validated_data.pop('full_name'),
+            **validated_data.pop('user'),
             password=validated_data.pop('password1'),
             cpf=validated_data.pop('cpf'),
         )
@@ -160,7 +159,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             self.fields.pop('professional')
 
     def update(self, instance, validated_data):
-        address = AddressSerializer(validated_data.pop('address'))
+        address = AddressSerializer(data=validated_data.pop('address', None))
         if address.is_valid():
             if hasattr(instance, 'address'):
                 instance.address = address.update(address.instance, address.validated_data)
