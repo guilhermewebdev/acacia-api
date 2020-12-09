@@ -168,7 +168,6 @@ class ProfessionalTestREST(TestCase):
             'full_name': 'Pindamonhagaba da Silva',
             'email': 'dudu@google.com',
             'cpf': '567.933.940-45',
-            'rg': 'rj343534',
             'address':  {
                 'street': 'Lá mesmo',
                 'street_number': '40',
@@ -281,14 +280,18 @@ class TestUserREST(TestCase):
         data = {
             'full_name': 'Grande Pequeno',
             'email': 'teste@gmail.com',
-            'professional':{
+            'cpf': '567.933.940-45',
+            'address':  {
+                'street': 'Lá mesmo',
+                'street_number': '40',
+                'zipcode': '36000-222',
+                'state': 'MG',
+                'city': 'Belo Origami',
+                'neighborhood': 'Centro',
+                'complementary': 'Casa',
+            },
+            'professional': {
                 'about': 'Hello World',
-                'state': self.professional.state,
-                'city': self.professional.city,
-                'address': self.professional.address,
-                'zip_code': self.professional.zip_code,
-                'cpf': self.professional.cpf,
-                'rg': self.professional.rg,
                 'occupation': self.professional.occupation,
                 'coren': self.professional.coren,
             }

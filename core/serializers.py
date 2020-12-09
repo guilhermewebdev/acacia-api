@@ -131,12 +131,6 @@ class PrivateProfessionalSerializer(serializers.ModelSerializer):
             'uuid',
             'about',
             'avg_price',
-            'state',
-            'city',
-            'address',
-            'zip_code',
-            'cpf',
-            'rg',
             'occupation',
             'skills',
             'coren',
@@ -158,6 +152,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
     professional = PrivateProfessionalSerializer(many=False, read_only=False)
     is_professional = serializers.BooleanField(read_only=True)    
     costumer = serializers.JSONField(read_only=True)
+    address = AddressSerializer(required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -165,14 +160,22 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             self.fields.pop('professional')
 
     def update(self, instance, validated_data):
+        address = AddressSerializer(validated_data.pop('address'))
+        if address.is_valid():
+            if hasattr(instance, 'address'):
+                instance.address = address.update(address.instance, address.validated_data)
+            else:
+                address.instance = models.Address(user=instance, **address.validated_data)
+                address.instance.full_clean()
+                address.save()
         if instance.is_professional and 'professional' in validated_data:
-            serializer = PrivateProfessionalSerializer(
+            professional = PrivateProfessionalSerializer(
                 instance=instance.professional,
                 data=validated_data.pop('professional')
             )
-            if serializer.is_valid():
-                serializer.update(instance.professional, serializer.validated_data)
-                instance.professional = serializer.instance
+            if professional.is_valid():
+                professional.update(instance.professional, professional.validated_data)
+                instance.professional = professional.instance
         return super().update(instance, validated_data)
         
     class Meta:
@@ -187,6 +190,8 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             'cellphone',
             'telephone_ddd',
             'telephone',
+            'cpf',
+            'address',
             'saved_in_pagarme',
             'is_active',
             'is_professional',

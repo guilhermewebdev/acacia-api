@@ -216,7 +216,9 @@ class User(AbstractUser):
     )
     cpf = models.CharField(
         max_length=14,
-        validators=[validate_cpf]
+        validators=[validate_cpf],
+        null=True,
+        blank=True,
     )
    
     USERNAME_FIELD='email'
