@@ -484,6 +484,14 @@ class TestUserREST(TestCase):
 
     def test_list_cards(self):
         client.login(username=self.user.email, password='abda1234')
+        self.user.create_customer(cpf='829.354.190-30')
+        card = {
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        }
+        self.user.create_card(card)
         response = client.get('/profile/cards.json')
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)

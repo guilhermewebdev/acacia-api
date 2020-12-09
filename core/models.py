@@ -239,7 +239,7 @@ class User(AbstractUser):
 
     @property
     def cards(self):
-        if not self.__cards:
+        if not self.__cards and self.saved_in_pagarme:
             self.__cards = handler_request.get(
                 f'https://api.pagar.me/1/cards?customer_id={self.pagarme_id}'
             )
