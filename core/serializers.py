@@ -1,3 +1,5 @@
+from core.forms import ERROR_MESSAGES
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from . import models
 
@@ -18,17 +20,30 @@ class AvailabilitiesSerializer(serializers.HyperlinkedModelSerializer):
             'uuid',
         )
 
+
+class AddressSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.Address
+        fields = (
+            'street',
+            'street_number',
+            'zipcode',
+            'state',
+            'city',
+            'neighborhood',
+            'complementary',
+        )
+
 class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
     full_name = serializers.CharField(source='user.full_name', max_length=200)
     email = serializers.EmailField(source='user.email')
     avatar = serializers.ImageField(source='user.avatar', read_only=True)
     is_active = serializers.BooleanField(source='user.is_active', read_only=True)
-    password1 = serializers.CharField(write_only=True)
-    password2 = serializers.CharField(write_only=True)
+    password1 = serializers.CharField(write_only=True, required=True)
+    password2 = serializers.CharField(write_only=True, required=True)
     cpf = serializers.CharField(write_only=True)
-    rg = serializers.CharField(write_only=True)
-    address = serializers.CharField(write_only=True)
-    zip_code = serializers.CharField(write_only=True)
+    address = AddressSerializer(write_only=True)
     coren = serializers.CharField(write_only=True)
     url = serializers.SerializerMethodField('get_url')
 
@@ -36,27 +51,51 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
         request = self.context['request']
         return request.build_absolute_uri(f'/professionals/{obj.uuid}/')
     
+    def validate(self, attrs):
+        if attrs.get('password1') != attrs.get('password2'):
+            raise ValidationError(
+                ERROR_MESSAGES['password_mismatch'],
+                code='password_mismatch',
+            )
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        user:models.User = models.User.objects.create_user(
+            email=validated_data.pop('email'),
+            full_name=validated_data.pop('full_name'),
+            password=validated_data.pop('password1'),
+            cpf=validated_data.pop('cpf'),
+        )
+        user.full_clean()
+        address = models.Address(
+            **validated_data.pop('address'),
+            user=user,
+        )
+        address.full_clean()
+        self.instance = models.Professional(
+            **validated_data,
+            user=user,
+        )
+        self.instance.full_clean()
+        return self.instance
     class Meta:
         model = models.Professional
         fields = (
             'uuid',
-            'about',
+            'full_name',
+            'email',
+            'password1',
+            'password2',
             'is_active',
             'avatar',
+            'cpf',
+            'about',
             'avg_price',
-            'state',
-            'city',
             'occupation',
             'skills',
             'avg_rating',
-            'password1',
-            'password2',
-            'full_name',
-            'email',
-            'cpf',
-            'rg',
             'address',
-            'zip_code',
             'coren',
             'url',
         )

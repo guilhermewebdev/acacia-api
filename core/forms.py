@@ -85,69 +85,9 @@ class UserDeletionForm(forms.ModelForm):
         model = User
         fields = []
 
-class ProfessionalCreationForm(forms.ModelForm):
-    full_name = forms.CharField(
-        max_length=200,
-        required=True,
-    )
-    email = forms.EmailField(
-        max_length=200,
-        required=True,
-    )
-    password1 = forms.CharField(
-        label=_("Password"),
-        strip=False,
-    )
-    password2 = forms.CharField(
-        label=_("Password confirmation"),
-        strip=False,
-        help_text=_("Enter the same password as before, for verification."),
-    )
-
-    def clean_password2(self):
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise ValidationError(
-                ERROR_MESSAGES['password_mismatch'],
-                code='password_mismatch',
-            )
-        return password2
-    
-    def clean_cpf(self):
-        validate_cpf(self.cleaned_data.get('cpf'))
-        return re.sub('[^0-9]', '', self.cleaned_data.get('cpf'))
-
-    def clean(self):
-        cleaned_data = super(ProfessionalCreationForm, self).clean()
-        if(cleaned_data['password1'] == cleaned_data['password2']):
-            cleaned_data.pop('password2')
-            if not self.instance.id:
-                self.instance.user = User.objects.create_user(
-                    email=cleaned_data.pop('email'),
-                    password=cleaned_data.pop('password1'),
-                    full_name=cleaned_data.pop('full_name'),
-                )
-                self.instance.user.full_clean()
-            for attr, value in cleaned_data.items():
-                setattr(self.instance, attr, value)
-            self.instance.full_clean()
-        return self.cleaned_data
-    
-    def save(self):
-        self.instance.user.save()
-        self.instance.save()
-        self.instance.user.confirm_email()
-        return self.instance
     class Meta:
         model = Professional
         fields = (
-            "state",
-            "city",
-            "address",
-            "zip_code",
-            "cpf",
-            "rg",
             "occupation",
             "coren",
         )
@@ -161,12 +101,6 @@ class ProfessionalUpdateForm(forms.ModelForm):
     class Meta:
         model = Professional
         fields = (
-            "state",
-            "city",
-            "address",
-            "zip_code",
-            "cpf",
-            "rg",
             "occupation",
             "coren",
             "skills",
