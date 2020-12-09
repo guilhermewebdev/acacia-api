@@ -85,13 +85,6 @@ class UserDeletionForm(forms.ModelForm):
         model = User
         fields = []
 
-    class Meta:
-        model = Professional
-        fields = (
-            "occupation",
-            "coren",
-        )
-
 class ProfessionalUpdateForm(forms.ModelForm):
 
     def clean_cpf(self):
