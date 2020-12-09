@@ -43,12 +43,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            cpf="529.982.247-25",
-            rg='mg3434032',
             skills=['AC', 'AD', 'HC'],
             occupation='CI',
             avg_price=80,
@@ -69,13 +63,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="601.554.963-56",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.040'
@@ -92,13 +79,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='1040'
@@ -115,13 +95,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='My',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
