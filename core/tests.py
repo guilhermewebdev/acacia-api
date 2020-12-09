@@ -38,6 +38,7 @@ class TestUser(TestCase):
             full_name='Linuz Torvalds',
             cellphone='31988776655',
             password='senha',
+            cpf='567.933.940-45',
         )
         user.full_clean()
         user.save()
@@ -168,12 +169,19 @@ class ProfessionalTestREST(TestCase):
             'email': 'dudu@google.com',
             'cpf': '567.933.940-45',
             'rg': 'rj343534',
-            'address': 'Lá mesmo',
-            'zip_code': '33000-334',
+            'address':  {
+                'street': 'Lá mesmo',
+                'street_number': '40',
+                'zipcode': '36000-222',
+                'state': 'MG',
+                'city': 'Belo Origami',
+                'neighborhood': 'Centro',
+                'complementary': 'Casa',
+            },
             'coren': 39.999
         }
-        response = client.post('/professionals/', data)
-        self.assertEqual(response.status_code, 200)
+        response = client.post('/professionals.json', data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('email', response.json())
         self.assertIn('uuid', response.json())
 

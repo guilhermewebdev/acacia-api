@@ -109,6 +109,7 @@ class PublicProfessionalSerializer(serializers.HyperlinkedModelSerializer):
             'url',
         )
         read_only_fields = (
+            'uuid',
             'about',
             'avg_price',
             'skills',
