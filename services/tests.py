@@ -109,16 +109,11 @@ class TestRating(TestCase):
             email='tet2e@tete.com',
             password='senha',
             full_name='Fulano de tal',
+            cpf="529.982.247-25",
         )
         self.user.save()
         self.professional = Professional(
             user=self.user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            cpf="529.982.247-25",
-            rg='mg3434032',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             avg_price=80,
