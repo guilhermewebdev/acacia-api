@@ -1,6 +1,6 @@
 from django.http.request import HttpRequest
 from django.utils import timezone
-from django.utils.timezone import timedelta
+from django.utils.timezone import timedelta, now
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
@@ -283,7 +283,7 @@ class TestCounterProposalREST(TestCase):
             )
         )
         self.professional.save()
-        self.user = User.objects.create_user(
+        self.user: User = User.objects.create_user(
             email='bate@bola.com',
             password='abda1234',
             is_active=True,
@@ -393,6 +393,10 @@ class TestJobs(TestCase):
             email='bate@bola.com',
             password='abda1234',
             is_active=True,
+            born=(now() - timedelta(days=10000)).date(),
+            full_name='Nerso da Silva',
+            cellphone='988883333',
+            cellphone_ddd='43',
         )
         self.user.save()
         self.proposal = Proposal(
@@ -453,3 +457,18 @@ class TestJobs(TestCase):
         self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertIn('deleted', response.json())
         self.assertEqual(response.json()['deleted'], 1)
+
+    def test_pay_job(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        self.user.create_customer('289.333.680-94')
+        self.user.create_card({
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        })
+        data = {'card_index': 0}
+        response = self.client.post(f'/jobs/{self.proposal.job.uuid}/pay.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('uuid', response.json())
