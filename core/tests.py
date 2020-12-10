@@ -513,3 +513,18 @@ class TestUserREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
         self.assertIn('id', response.json())
+
+    def test_get_recipient(self):
+        self.professional.create_recipient(**{
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        })
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.get('/profile/recipient.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('id', response.json())

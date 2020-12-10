@@ -230,7 +230,7 @@ class Users(viewsets.ViewSet):
 
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
     def recipient(self, request, *args, **kwargs):
-        recipient = request.user.professiona.recipient
+        recipient = request.user.professional.recipient
         if recipient:
             return Response(data=recipient)
         return Response(status=404)

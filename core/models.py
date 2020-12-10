@@ -496,14 +496,19 @@ class Professional(models.Model):
     saved_in_pagarme = models.BooleanField(
         default=False
     )
+    pagarme_id = models.CharField(
+        null=True,
+        blank=True,
+        max_length=100,
+    )
     __recipient = {}
 
     @property
     def recipient(self):
         if self.saved_in_pagarme and not self.__recipient:
-            self.__recipient = recipient.find_by({
-                "email": self.user.email
-            })
+            self.__recipient = handler_request.get(
+                f'https://api.pagar.me/1/recipients/{self.pagarme_id}'
+            )
         return self.__recipient
     
     @property
@@ -551,8 +556,10 @@ class Professional(models.Model):
                     }
                 ]
             })
-            if self.__recipient['id'] is not None:
+            if self.__recipient.get('id') is not None:
                 self.saved_in_pagarme = True
+                self.pagarme_id = self.__recipient['id']
+                self.save(update_fields=['saved_in_pagarme', 'pagarme_id'])
         return self.recipient
     
     @staticmethod
