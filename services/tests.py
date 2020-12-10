@@ -5,8 +5,8 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from rest_framework import response
-from core.models import Professional
-from .models import CounterProposal, Proposal, Rating
+from core.models import Address, Professional
+from .models import CounterProposal, Job, Proposal, Rating
 
 User = get_user_model()
 TODAY = timezone.now()
@@ -385,8 +385,20 @@ class TestJobs(TestCase):
             born=(now() - timedelta(days=10000)).date(),
             full_name='Nerso da Silva',
             cellphone='988883333',
+            cpf="529.982.247-25",
             cellphone_ddd='43',
         )
+        address = Address(
+            user=self.user,
+            street='Rua Tal',
+            street_number='45',
+            zipcode='45666-333',
+            state='MG',
+            city='Notredame',
+            neighborhood='Gran',
+            complementary='Fundos',
+        )
+        address.save()
         self.user.save()
         self.proposal = Proposal(
             client=self.user,
@@ -449,7 +461,7 @@ class TestJobs(TestCase):
 
     def test_pay_job(self):
         self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
-        self.user.create_customer('289.333.680-94')
+        self.user.create_customer()
         self.user.create_card({
             "card_expiration_date": "1122",
             "card_number": "4018720572598048",
@@ -461,3 +473,7 @@ class TestJobs(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
         self.assertIn('uuid', response.json())
+        self.assertIn('transaction', response.json())
+        self.assertIn('id', response.json()['transaction'])
+        job:Job = Job.objects.get(uuid=str(self.proposal.job.uuid))
+        self.assertTrue(job.paid)

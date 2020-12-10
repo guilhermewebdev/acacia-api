@@ -196,9 +196,14 @@ class Users(viewsets.ViewSet):
 
     @customer.mapping.post
     def create_customer(self, request, *args, **kwargs):
-        if not 'cpf' in request.data:
-            return Response({'error': '"cpf" field is required'}, status=400)
-        customer = request.user.create_customer(request.data.get('cpf'))
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request},
+            instance=request.user
+        )
+        if serializer.is_valid():
+            serializer.update(request.user, serializer.validated_data)
+        customer = request.user.create_customer()
         return Response(customer)
 
     @action(methods=['get'], detail=False)

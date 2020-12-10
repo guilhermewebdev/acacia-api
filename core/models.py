@@ -220,7 +220,7 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
-   
+    
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
@@ -230,6 +230,10 @@ class User(AbstractUser):
     @property
     def is_professional(self):
         return hasattr(self, 'professional')
+
+    @property
+    def unmasked_cpf(self):
+        return re.sub('[^0-9]', '', self.cpf or '')
     
     @property
     def customer(self):
@@ -303,10 +307,8 @@ class User(AbstractUser):
             self.save(update_fields=['is_active'])
         return self.is_active
 
-    def create_customer(self, cpf):
+    def create_customer(self):
         if not self.saved_in_pagarme:
-            validate_cpf(cpf)
-            unmasked_cpf = re.sub('[^0-9]', '', cpf)
             data = {
                 'name': self.full_name,
                 'email': self.email,
@@ -317,7 +319,7 @@ class User(AbstractUser):
                 'phone_numbers': [],
                 'documents': [{
                     'type': 'cpf',
-                    'number': unmasked_cpf,
+                    'number': self.unmasked_cpf,
                 }]
             }
             if self.full_cellphone:
@@ -382,6 +384,7 @@ class Address(models.Model):
     complementary = models.CharField(
         max_length=200,
     )
+
 
     def __str__(self) -> str:
         return f'{self.street}, {self.street_number}, {self.neighborhood}, {self.city} - {self.state}'

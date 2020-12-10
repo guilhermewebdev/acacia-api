@@ -462,7 +462,7 @@ class TestUserREST(TestCase):
 
     def test_get_customer(self):
         client.login(username=self.user.email, password='abda1234')
-        self.user.create_customer(cpf='829.354.190-30')
+        self.user.create_customer()
         response = client.get('/profile/customer.json')
         self.assertEqual(response.get('Content-Type'), 'application/json', msg=response.content)
         self.assertEqual(response.status_code, 200, msg=response.content)
@@ -470,7 +470,7 @@ class TestUserREST(TestCase):
 
     def test_create_card(self):
         client.login(username=self.user.email, password='abda1234')
-        self.user.create_customer(cpf='829.354.190-30')
+        self.user.create_customer()
         data = {
             "card_expiration_date": "1122",
             "card_number": "4018720572598048",
@@ -484,7 +484,7 @@ class TestUserREST(TestCase):
 
     def test_list_cards(self):
         client.login(username=self.user.email, password='abda1234')
-        self.user.create_customer(cpf='829.354.190-30')
+        self.user.create_customer()
         card = {
             "card_expiration_date": "1122",
             "card_number": "4018720572598048",

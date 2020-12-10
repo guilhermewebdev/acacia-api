@@ -1,5 +1,7 @@
 from functools import reduce
+import re
 from django.core.exceptions import ValidationError
+from django.forms.models import model_to_dict
 from core.models import Professional
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -61,15 +63,39 @@ class Payment(models.Model):
     def pay(self, card_index=0):
         self.client.validate_customer()
         self.client.validate_cards()
+        if not hasattr(self.client, 'address'):
+            raise ValidationError('The user address is required')
         if not self.paid:
+            billing_fields = ['zipcode', 'street', 'street_number', 'state', 'city', 'neighborhood']
+            address = model_to_dict(instance=self.client.address, fields=billing_fields)
+            address['zipcode'] = re.sub('[^0-9]', '', address.get('zipcode'))
+            customer = {
+                'external_id': str(self.client.uuid),
+                'name': self.client.full_name,
+                'email': self.client.email,
+                'country': 'br',
+                'type': 'individual',
+                'phone_numbers': self.client.customer['phone_numbers'],
+                'documents': [{
+                    'type': 'cpf',
+                    'number': self.client.unmasked_cpf
+                }],
+            }
             data = {
                 'amount': int(self.value * 100),
                 'card_id': self.client.cards[card_index]['id'],
-                'customer': self.client.customer,
+                'customer': customer,
                 'payment_method': 'credit_card',
                 'async': False,
                 'postback_url': self.postback_url,
                 'soft_descriptor': settings.PAYMENT_DESCRIPTION,
+                'billing': {
+                    'name': self.client.full_name,
+                    'address': {
+                        **address,
+                        'country': 'br'
+                    }
+                },
                 'items': [{
                     'id': str(self.job.uuid),
                     'title': self.job.proposal.description,
