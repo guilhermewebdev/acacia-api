@@ -516,9 +516,10 @@ class Professional(models.Model):
 
     @property
     def cash(self):
-        cash_in = float(self.receipts.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        cash_out = float(self.cash_outs.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        return cash_in - cash_out
+        cash = Professional.objects.filter(uuid=str(self.uuid)).aggregate(
+            cash_in=models.Sum('receipts__value'), cash_out=models.Sum('cash_outs__value')
+        )
+        return (cash.get('cash_in', 0) or 0) - (cash.get('cash_out', 0) or 0)
 
     def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name, account_type):
         unmasked_cpf = re.sub('[^0-9]', '', self.cpf)
