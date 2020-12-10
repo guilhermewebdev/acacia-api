@@ -226,6 +226,7 @@ class TestUserREST(TestCase):
             cellphone_ddd='55',
             full_name='Crocodilo Dande',
             born=(now() - timedelta(days=10000)).date(),
+            cpf='829.354.190-30',
         )
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
