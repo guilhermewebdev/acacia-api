@@ -128,19 +128,15 @@ class Users(viewsets.ViewSet):
     auth_actions = ('customer', 'create_customer', 'availabilities', 'put', 'get', 'patch', 'delete')
     auth_methods = ('PUT', 'GET', 'PATCH', 'DELETE')
     allowed_actions = ('activate',)
-    __serializer = None
+    serializers_map = {
+        'recipient': serializers.RecipientSerializer,
+    }
 
     @property
     def serializer_class(self):
-        if not self.__serializer:
-            if self.action in self.auth_actions or self.request.method in self.auth_methods:
-                self.__serializer = serializers.PrivateUserSerializer
-            else: self.__serializer = serializers.CreationUserSerializer
-        return self.__serializer
-    
-    @serializer_class.setter
-    def serializer(self, value):
-        self.__serializer = value
+        if self.action in self.auth_actions or self.request.method in self.auth_methods:
+            return serializers.PrivateUserSerializer
+        return serializers.CreationUserSerializer
 
     def get_permissions(self):
         if self.action in self.allowed_actions:
@@ -201,7 +197,9 @@ class Users(viewsets.ViewSet):
     @action(methods=['get'], detail=False)
     def customer(self, request, *args, **kwargs):
         user: models.User = request.user
-        return Response(user.customer, content_type='application/json')
+        if user.customer:
+            return Response(user.customer)
+        return Response(status=404)
 
     @customer.mapping.post
     def create_customer(self, request, *args, **kwargs):
@@ -229,12 +227,20 @@ class Users(viewsets.ViewSet):
 
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
     def recipient(self, request, *args, **kwargs):
-        return Response(data=request.user.professional.recipient)
+        recipient = request.user.professiona.recipient
+        if recipient:
+            return Response(data=recipient)
+        return Response(status=404)
 
     @recipient.mapping.post
     def create_recipient(self, request, *args, **kwargs):
-        pass
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            recipient = request.user.professional.create_recipient(**serializer.validated_data)
+            return Response(recipient)
+        return Response(serializer.errors, status=400)
 
+        
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
     permission_classes = [IsAuthenticated, IsProfessional]
