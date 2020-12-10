@@ -128,12 +128,19 @@ class Users(viewsets.ViewSet):
     auth_actions = ('customer', 'create_customer', 'availabilities', 'put', 'get', 'patch', 'delete')
     auth_methods = ('PUT', 'GET', 'PATCH', 'DELETE')
     allowed_actions = ('activate',)
+    __serializer = None
 
     @property
     def serializer_class(self):
-        if self.action in self.auth_actions or self.request.method in self.auth_methods:
-            return serializers.PrivateUserSerializer
-        return serializers.CreationUserSerializer
+        if not self.__serializer:
+            if self.action in self.auth_actions or self.request.method in self.auth_methods:
+                self.__serializer = serializers.PrivateUserSerializer
+            else: self.__serializer = serializers.CreationUserSerializer
+        return self.__serializer
+    
+    @serializer_class.setter
+    def serializer(self, value):
+        self.__serializer = value
 
     def get_permissions(self):
         if self.action in self.allowed_actions:

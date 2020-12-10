@@ -248,6 +248,6 @@ class RecipientSerializer(serializers.Serializer):
 
     def validate(self, attrs:dict):
         validate = lambda item: RegexValidator(
-            self.regex_fields[item[0]]
+            self.regex_fields.get(item[0], '')
         )(item[1]) or True
         return dict(filter(validate, attrs.items()))
