@@ -1,4 +1,6 @@
 from os import stat
+
+from pagarme import recipient
 from core.models import Availability
 from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
@@ -217,6 +219,14 @@ class Users(viewsets.ViewSet):
             data = request.user.create_card(form.full_cleaned_data)
             return Response(data=data)
         return Response(form.errors, status=400)
+
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
+    def recipient(self, request, *args, **kwargs):
+        return Response(data=request.user.professional.recipient)
+
+    @recipient.mapping.post
+    def create_recipient(self, request, *args, **kwargs):
+        pass
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'

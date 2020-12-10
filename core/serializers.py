@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from core.forms import ERROR_MESSAGES
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
@@ -226,3 +227,27 @@ class CreationUserSerializer(serializers.ModelSerializer):
             'uuid',
         )
         lookup_field = 'uuid'
+
+class RecipientSerializer(serializers.Serializer):
+    agency = serializers.CharField(required=True, write_only=True)
+    agency_dv = serializers.CharField(required=True, write_only=True)
+    bank_code = serializers.CharField(required=True, write_only=True)
+    account = serializers.CharField(required=True, write_only=True)
+    account_dv = serializers.CharField(required=True, write_only=True)
+    legal_name = serializers.CharField(required=True, write_only=True)
+    account_type = serializers.CharField(required=True, write_only=True)
+
+    regex_fields = {
+        'agency': '^[0-9]{4}$',
+        'agency_dv': '^[0-9]{1}$',
+        'bank_code': '^[0-9]{3}$',
+        'account': '^[0-9]{4}$',
+        'account_dv': '^[0-9]{1}$',
+        'legal_name': '^[A-z ]$',
+    }
+
+    def validate(self, attrs:dict):
+        validate = lambda item: RegexValidator(
+            self.regex_fields[item[0]]
+        )(item[1]) or True
+        return dict(filter(validate, attrs.items()))

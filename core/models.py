@@ -517,7 +517,7 @@ class Professional(models.Model):
     @property
     def cash(self):
         cash = Professional.objects.filter(uuid=str(self.uuid)).aggregate(
-            cash_in=models.Sum('receipts__value'), cash_out=models.Sum('cash_outs__value')
+            cash_in=models.Sum('receipts__value'), cash_out=models.Sum('cash_outs__value'),
         )
         return (cash.get('cash_in', 0) or 0) - (cash.get('cash_out', 0) or 0)
 
