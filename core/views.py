@@ -80,13 +80,13 @@ class Professionals(
         filter_by_attrs = verify_dict(dict(
             user__is_active=True,
             skills__overlap=filters.get('skills'),
-            city__search=list(filters.get('city', [None]))[0],
-            state=list(filters.get('state', [None]))[0],
+            user__address__city__search=list(filters.get('city', [None]))[0],
+            user__address__state=list(filters.get('state', [None]))[0],
             occupation=list(filters.get('occupation', [None]))[0],
             search=filters.get('search', [None])[0],
         ))
         queryset = self.queryset.annotate(
-                search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email')
+                search=SearchVector('user__full_name', 'occupation', 'skills', 'coren', 'about', 'user__email', 'user__address__city')
             ).filter(
             Q(**filter_by_date) | Q(**filter_by_time) | 
             Q(**filter_by_week_day) | Q(**filter_by_day),
@@ -96,12 +96,12 @@ class Professionals(
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        form = forms.ProfessionalCreationForm(data=request.data)
-        if form.is_valid():
-            professional = form.save()
-            serializer = self.serializer_class(instance=professional, many=False, context={'request': request})
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.instance = serializer.create(serializer.validated_data)
+            serializer.save()
             return Response(serializer.data)
-        return Response(exception=form.errors, status=400)
+        return Response(serializer.errors, status=400)
 
     def retrieve(self, request, uuid=None, *args, **kwargs):
         professional = get_object_or_404(self.queryset, uuid=uuid)
@@ -196,9 +196,14 @@ class Users(viewsets.ViewSet):
 
     @customer.mapping.post
     def create_customer(self, request, *args, **kwargs):
-        if not 'cpf' in request.data:
-            return Response({'error': '"cpf" field is required'}, status=400)
-        customer = request.user.create_customer(request.data.get('cpf'))
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request},
+            instance=request.user
+        )
+        if serializer.is_valid():
+            serializer.update(request.user, serializer.validated_data)
+        customer = request.user.create_customer()
         return Response(customer)
 
     @action(methods=['get'], detail=False)

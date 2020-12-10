@@ -4,7 +4,7 @@ from django.forms.models import model_to_dict
 from django.http.request import HttpRequest
 from django.test import TestCase, Client
 from rest_framework import response
-from .models import Availability, User, Professional, account_activation_token
+from .models import Address, Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
 from rest_framework.test import APIClient
 
@@ -38,17 +38,12 @@ class TestUser(TestCase):
             full_name='Linuz Torvalds',
             cellphone='31988776655',
             password='senha',
+            cpf='567.933.940-45',
         )
         user.full_clean()
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            cpf="529.982.247-25",
-            rg='mg3434032',
             skills=['AC', 'AD', 'HC'],
             occupation='CI',
             avg_price=80,
@@ -69,13 +64,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="601.554.963-56",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.040'
@@ -92,13 +80,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='1040'
@@ -115,13 +96,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='My',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
@@ -150,19 +124,18 @@ class ProfessionalTestREST(TestCase):
                 email='test@tstd.com',
                 password='abda1234',
                 is_active=True,
-                full_name='Bernardo Lagosta'
+                full_name='Bernardo Lagosta',
+                address=Address(
+                    city='Longa vida',
+                    state='MG',
+                )
             ),
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
             avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
         )
+        self.professional.user.address.save()
         self.professional.user.save()
         self.professional.save()
 
@@ -178,7 +151,7 @@ class ProfessionalTestREST(TestCase):
             'is_active': self.professional.user.is_active,
             'avg_price': float(self.professional.avg_price),
             'state': 'MG',
-            'city': self.professional.city,
+            'city': self.professional.user.address.city,
             'occupation': self.professional.occupation,
             'skills': self.professional.skills,
             'avg_rating': self.professional.avg_rating,
@@ -195,13 +168,19 @@ class ProfessionalTestREST(TestCase):
             'full_name': 'Pindamonhagaba da Silva',
             'email': 'dudu@google.com',
             'cpf': '567.933.940-45',
-            'rg': 'rj343534',
-            'address': 'Lá mesmo',
-            'zip_code': '33000-334',
+            'address':  {
+                'street': 'Lá mesmo',
+                'street_number': '40',
+                'zipcode': '36000-222',
+                'state': 'MG',
+                'city': 'Belo Origami',
+                'neighborhood': 'Centro',
+                'complementary': 'Casa',
+            },
             'coren': 39.999
         }
-        response = client.post('/professionals/', data)
-        self.assertEqual(response.status_code, 200)
+        response = client.post('/professionals.json', data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('email', response.json())
         self.assertIn('uuid', response.json())
 
@@ -247,6 +226,7 @@ class TestUserREST(TestCase):
             cellphone_ddd='55',
             full_name='Crocodilo Dande',
             born=(now() - timedelta(days=10000)).date(),
+            cpf='829.354.190-30',
         )
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
@@ -255,13 +235,7 @@ class TestUserREST(TestCase):
                 is_active=True,
                 full_name='Bernardo Lagosta'
             ),
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
             avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
@@ -307,14 +281,18 @@ class TestUserREST(TestCase):
         data = {
             'full_name': 'Grande Pequeno',
             'email': 'teste@gmail.com',
-            'professional':{
+            'cpf': '567.933.940-45',
+            'address':  {
+                'street': 'Lá mesmo',
+                'street_number': '40',
+                'zipcode': '36000-222',
+                'state': 'MG',
+                'city': 'Belo Origami',
+                'neighborhood': 'Centro',
+                'complementary': 'Casa',
+            },
+            'professional': {
                 'about': 'Hello World',
-                'state': self.professional.state,
-                'city': self.professional.city,
-                'address': self.professional.address,
-                'zip_code': self.professional.zip_code,
-                'cpf': self.professional.cpf,
-                'rg': self.professional.rg,
                 'occupation': self.professional.occupation,
                 'coren': self.professional.coren,
             }
@@ -485,7 +463,7 @@ class TestUserREST(TestCase):
 
     def test_get_customer(self):
         client.login(username=self.user.email, password='abda1234')
-        self.user.create_customer(cpf='829.354.190-30')
+        self.user.create_customer()
         response = client.get('/profile/customer.json')
         self.assertEqual(response.get('Content-Type'), 'application/json', msg=response.content)
         self.assertEqual(response.status_code, 200, msg=response.content)
@@ -493,7 +471,7 @@ class TestUserREST(TestCase):
 
     def test_create_card(self):
         client.login(username=self.user.email, password='abda1234')
-        self.user.create_customer(cpf='829.354.190-30')
+        self.user.create_customer()
         data = {
             "card_expiration_date": "1122",
             "card_number": "4018720572598048",
@@ -507,6 +485,14 @@ class TestUserREST(TestCase):
 
     def test_list_cards(self):
         client.login(username=self.user.email, password='abda1234')
+        self.user.create_customer()
+        card = {
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        }
+        self.user.create_card(card)
         response = client.get('/profile/cards.json')
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)

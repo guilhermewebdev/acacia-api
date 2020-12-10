@@ -1,12 +1,12 @@
 from django.http.request import HttpRequest
 from django.utils import timezone
-from django.utils.timezone import timedelta
+from django.utils.timezone import timedelta, now
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from rest_framework import response
-from core.models import Professional
-from .models import CounterProposal, Proposal, Rating
+from core.models import Address, Professional
+from .models import CounterProposal, Job, Proposal, Rating
 
 User = get_user_model()
 TODAY = timezone.now()
@@ -28,12 +28,6 @@ class TestProposal(TestCase):
         self.user.save()
         self.professional = Professional(
             user=self.user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            cpf="529.982.247-25",
-            rg='mg3434032',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             avg_price=80,
@@ -109,16 +103,11 @@ class TestRating(TestCase):
             email='tet2e@tete.com',
             password='senha',
             full_name='Fulano de tal',
+            cpf="529.982.247-25",
         )
         self.user.save()
         self.professional = Professional(
             user=self.user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            cpf="529.982.247-25",
-            rg='mg3434032',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             avg_price=80,
@@ -283,7 +272,7 @@ class TestCounterProposalREST(TestCase):
             )
         )
         self.professional.save()
-        self.user = User.objects.create_user(
+        self.user: User = User.objects.create_user(
             email='bate@bola.com',
             password='abda1234',
             is_active=True,
@@ -393,7 +382,23 @@ class TestJobs(TestCase):
             email='bate@bola.com',
             password='abda1234',
             is_active=True,
+            born=(now() - timedelta(days=10000)).date(),
+            full_name='Nerso da Silva',
+            cellphone='988883333',
+            cpf="529.982.247-25",
+            cellphone_ddd='43',
         )
+        address = Address(
+            user=self.user,
+            street='Rua Tal',
+            street_number='45',
+            zipcode='45666-333',
+            state='MG',
+            city='Notredame',
+            neighborhood='Gran',
+            complementary='Fundos',
+        )
+        address.save()
         self.user.save()
         self.proposal = Proposal(
             client=self.user,
@@ -453,3 +458,22 @@ class TestJobs(TestCase):
         self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertIn('deleted', response.json())
         self.assertEqual(response.json()['deleted'], 1)
+
+    def test_pay_job(self):
+        self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
+        self.user.create_customer()
+        self.user.create_card({
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        })
+        data = {'card_index': 0}
+        response = self.client.post(f'/jobs/{self.proposal.job.uuid}/pay.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('uuid', response.json())
+        self.assertIn('transaction', response.json())
+        self.assertIn('id', response.json()['transaction'])
+        job:Job = Job.objects.get(uuid=str(self.proposal.job.uuid))
+        self.assertTrue(job.paid)

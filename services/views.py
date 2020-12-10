@@ -11,6 +11,7 @@ from core.views import IsProfessional
 from django.utils.translation import gettext as _
 import financial.models
 import financial.serializers
+
 class ProposalsViewSet(ViewSet):
     serializer_class = serializers.ProposalSerializer
     permission_classes = [IsAuthenticated]
@@ -259,18 +260,18 @@ class JobViewSet(ViewSet):
 
     @action(methods=['post'], detail=True)
     def pay(self, request, uuid, *args, **kwargs):
-        job = get_object_or_404(
+        job:models.Job = get_object_or_404(
             self.queryset,
             uuid=uuid,
             payment__isnull=True,
             client=request.user,
         )
         serializer = financial.serializers.PaymentSerializer(
-            request.data,
+            data=request.data,
             context={'request': request}
         )
         if serializer.is_valid():
-            serializer.save()
-            serializer.instance.pay(serializer.validated_data.get('card_index'))
+            payment = job.pay(**serializer.validated_data)
+            serializer.instance = payment
             return Response(serializer.data)
         return Response(serializer.errors, status=400)

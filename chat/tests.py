@@ -26,12 +26,6 @@ class TestChat(TestCase):
         self.user.save()
         self.professional = Professional(
             user=self.user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            cpf="752.861.710-52",
-            rg='mg343403',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.002'

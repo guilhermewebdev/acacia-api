@@ -1,3 +1,4 @@
+from financial.models import Payment
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -85,6 +86,12 @@ class Job(models.Model):
         blank=True,
     )
 
+    @property
+    def paid(self):
+        if hasattr(self, 'payment'):
+            return self.payment.paid
+        return False
+
     def rate(self, user, grade):
         if not self.end_datetime:
             raise ValidationError(
@@ -102,6 +109,19 @@ class Job(models.Model):
         rate.full_clean()
         rate.save()
         return rate
+
+    def pay(self, card_index):
+        if not self.paid:
+            payment = Payment(
+                client=self.client,
+                professional=self.professional,
+                value=self.value,
+                job=self,
+            )
+            payment.full_clean()
+            payment.save()
+            payment.pay(card_index)
+            return payment
 
     def validate_client(self):
         if self.client != self.proposal.client:
