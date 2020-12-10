@@ -130,10 +130,13 @@ class Users(viewsets.ViewSet):
     allowed_actions = ('activate',)
     serializers_map = {
         'recipient': serializers.RecipientSerializer,
+        'create_recipient': serializers.RecipientSerializer,
     }
 
     @property
     def serializer_class(self):
+        if self.action in self.serializers_map.keys():
+            return self.serializers_map[self.action]
         if self.action in self.auth_actions or self.request.method in self.auth_methods:
             return serializers.PrivateUserSerializer
         return serializers.CreationUserSerializer
@@ -240,7 +243,7 @@ class Users(viewsets.ViewSet):
             return Response(recipient)
         return Response(serializer.errors, status=400)
 
-        
+
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
     permission_classes = [IsAuthenticated, IsProfessional]

@@ -233,7 +233,8 @@ class TestUserREST(TestCase):
                 email='test@tstd.com',
                 password='abda1234',
                 is_active=True,
-                full_name='Bernardo Lagosta'
+                full_name='Bernardo Lagosta',
+                cpf='059.391.440-63',
             ),
             avg_price=99,
             skills=['CI', 'AE', 'EM'],
@@ -497,3 +498,18 @@ class TestUserREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
         self.assertGreater(len(response.json()), 0)
+
+    def test_create_recipient(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        recipient = {
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        }
+        response = client.post('/profile/recipient.json', data=recipient, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('id', response.json())

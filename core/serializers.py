@@ -229,25 +229,33 @@ class CreationUserSerializer(serializers.ModelSerializer):
         lookup_field = 'uuid'
 
 class RecipientSerializer(serializers.Serializer):
-    agency = serializers.CharField(required=True, write_only=True)
-    agency_dv = serializers.CharField(required=True, write_only=True)
-    bank_code = serializers.CharField(required=True, write_only=True)
-    account = serializers.CharField(required=True, write_only=True)
-    account_dv = serializers.CharField(required=True, write_only=True)
-    legal_name = serializers.CharField(required=True, write_only=True)
-    account_type = serializers.CharField(required=True, write_only=True)
-
-    regex_fields = {
-        'agency': '^[0-9]{4}$',
-        'agency_dv': '^[0-9]{1}$',
-        'bank_code': '^[0-9]{3}$',
-        'account': '^[0-9]{4}$',
-        'account_dv': '^[0-9]{1}$',
-        'legal_name': '^[A-z ]$',
-    }
-
-    def validate(self, attrs:dict):
-        validate = lambda item: RegexValidator(
-            self.regex_fields.get(item[0], '')
-        )(item[1]) or True
-        return dict(filter(validate, attrs.items()))
+    agency = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{4}$'),]
+    )
+    agency_dv = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{1}$'),]
+    )
+    bank_code = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{3}$'),]
+    )
+    account = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{5}$'),]
+    )
+    account_dv = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{1}$'),]
+    )
+    legal_name = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[A-z ]{5,}$'),]
+    )

@@ -521,12 +521,10 @@ class Professional(models.Model):
         )
         return (cash.get('cash_in', 0) or 0) - (cash.get('cash_out', 0) or 0)
 
-    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name, account_type):
-        unmasked_cpf = re.sub('[^0-9]', '', self.cpf)
+    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name):
         if not self.saved_in_pagarme:
             self.__recipient = recipient.create({
                 "type": "individual",
-                "document_number": unmasked_cpf,
                 "name": self.user.full_name,
                 "email": self.user.email,
                 "postback_url": self.postback_url,
@@ -536,9 +534,9 @@ class Professional(models.Model):
                     "bank_code": bank_code, 
                     "conta": account, 
                     "conta_dv": account_dv, 
-                    "document_number": unmasked_cpf, 
+                    "document_type": 'cpf',
+                    "document_number": self.user.unmasked_cpf, 
                     "legal_name": legal_name.upper(), 
-                    "type": account_type,
                 },
                 "phone_numbers": [
                     {
@@ -559,4 +557,4 @@ class Professional(models.Model):
     
     @staticmethod
     def get_deleted_professional(cls):
-        return cls.object.get(user__email='deleted@user.com')
+        return cls.objects.get(user__email='deleted@user.com')
