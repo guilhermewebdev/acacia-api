@@ -28,6 +28,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', False)
 
+PRODUCTION = os.environ.get('PRODUCTION', False)
+
 # Payment settings
 
 pagarme.authentication_key(os.environ.get('PAGARME_API_KEY'))
@@ -42,6 +44,8 @@ CASH_OUT_COMMISSION = float(os.environ.get('CASH_OUT_COMMISSION', 15))
 
 PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION')
 
+PLATFORM_COMMISSION = os.environ.get('PLATFORM_COMMISSION', 0)
+
 # Application definition
 
 HOST = os.environ.get('HOST', 'localhost')
@@ -52,7 +56,7 @@ CLIENT_DOMAIN = os.environ.get('CLIENT_DOMAIN')
 
 ALLOWED_HOSTS = [HOST]
 
-AXES_ENABLED = not DEBUG
+AXES_ENABLED = True
 
 EMAIL_HOST = os.environ.get('EMAIL_HOST', HOST)
 

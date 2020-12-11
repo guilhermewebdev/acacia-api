@@ -375,8 +375,10 @@ class TestJobs(TestCase):
                 email='dance@balance.com',
                 password='abda143501',
                 is_active=True,
+                cpf="396.852.650-38",
             )
         )
+        self.professional.user.save()
         self.professional.save()
         self.user = User.objects.create_user(
             email='bate@bola.com',
@@ -414,6 +416,21 @@ class TestJobs(TestCase):
         )
         self.proposal.save()
         self.proposal.accept()
+        self.user.create_customer()
+        self.user.create_card({
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        })
+        self.professional.create_recipient(**{
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        })
     
     def test_list_jobs(self):
         self.client.login(request=HttpRequest(), username=self.professional.user.email, password='abda143501')
@@ -461,13 +478,6 @@ class TestJobs(TestCase):
 
     def test_pay_job(self):
         self.client.login(request=HttpRequest(), username=self.user.email, password='abda1234')
-        self.user.create_customer()
-        self.user.create_card({
-            "card_expiration_date": "1122",
-            "card_number": "4018720572598048",
-            "card_cvv": "123",
-            "card_holder_name": "Cersei Lannister"
-        })
         data = {'card_index': 0}
         response = self.client.post(f'/jobs/{self.proposal.job.uuid}/pay.json', data=data, content_type='application/json')
         self.assertEqual(response.status_code, 200, response.content)

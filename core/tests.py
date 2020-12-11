@@ -243,6 +243,22 @@ class TestUserREST(TestCase):
         )
         self.professional.user.save()
         self.professional.save()
+        self.user.create_customer()
+        card = {
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        }
+        self.user.create_card(card)
+        self.professional.create_recipient(**{
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        })
     
     def test_get_profile(self):
         client.login(username=self.user.email, password='abda1234')
@@ -486,14 +502,7 @@ class TestUserREST(TestCase):
 
     def test_list_cards(self):
         client.login(username=self.user.email, password='abda1234')
-        self.user.create_customer()
-        card = {
-            "card_expiration_date": "1122",
-            "card_number": "4018720572598048",
-            "card_cvv": "123",
-            "card_holder_name": "Cersei Lannister"
-        }
-        self.user.create_card(card)
+        
         response = client.get('/profile/cards.json')
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
@@ -515,14 +524,6 @@ class TestUserREST(TestCase):
         self.assertIn('id', response.json())
 
     def test_get_recipient(self):
-        self.professional.create_recipient(**{
-            'agency': '0932',
-            'agency_dv': '5',
-            'bank_code': '341',
-            'account': '58054',
-            'account_dv': '1',
-            'legal_name': 'HOUSE TARGARYEN'
-        })
         client.login(username=self.professional.user.email, password='abda1234')
         response = client.get('/profile/recipient.json')
         self.assertEqual(response.status_code, 200, response.content)

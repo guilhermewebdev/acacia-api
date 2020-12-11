@@ -2,6 +2,7 @@ from functools import reduce
 import re
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
+import pagarme
 from core.models import Professional
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -60,15 +61,22 @@ class Payment(models.Model):
     def postback_url(self):
         return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
+    def validate_recipient(self):
+        if not self.professional.recipient:
+            raise ValidationError('The professional should create a recipient account')
+
     def pay(self, card_index=0):
         self.client.validate_customer()
         self.client.validate_cards()
+        self.validate_recipient()
         if not hasattr(self.client, 'address'):
             raise ValidationError('The user address is required')
         if not self.paid:
             billing_fields = ['zipcode', 'street', 'street_number', 'state', 'city', 'neighborhood']
             address = model_to_dict(instance=self.client.address, fields=billing_fields)
             address['zipcode'] = re.sub('[^0-9]', '', address.get('zipcode'))
+            default_recipient = pagarme.recipient.default_recipient()
+            recipient_status = 'live' if settings.PRODUCTION else 'test'
             customer = {
                 'external_id': str(self.client.uuid),
                 'name': self.client.full_name,
@@ -110,7 +118,21 @@ class Payment(models.Model):
                     'job': str(self.job.uuid),
                     'professional': self.professional.user.full_name,
                     'client': self.client.full_name,
-                }
+                },
+                'split_rules': [
+                    {
+                        'recipient_id': default_recipient.get(recipient_status),
+                        'charge_processing_fee': True,
+                        'percentage': settings.PLATFORM_COMMISSION or 0,
+                        'charge_remainder_fee': True,
+                    },
+                    {
+                        'recipient_id': self.professional.recipient['id'],
+                        'charge_processing_fee': False,
+                        'percentage': (100 - (settings.PLATFORM_COMMISSION or 0)),
+                        'charge_remainder_fee': False,
+                    },
+                ]
             }
             self.__transaction = transaction.create(data)
             if self.__transaction.get('status', None) == 'paid':
