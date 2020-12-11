@@ -77,6 +77,7 @@ class Payment(models.Model):
             address['zipcode'] = re.sub('[^0-9]', '', address.get('zipcode'))
             default_recipient = pagarme.recipient.default_recipient()
             recipient_status = 'live' if settings.PRODUCTION else 'test'
+            comission = settings.PLATFORM_COMMISSION or 0
             customer = {
                 'external_id': str(self.client.uuid),
                 'name': self.client.full_name,
@@ -123,13 +124,13 @@ class Payment(models.Model):
                     {
                         'recipient_id': default_recipient.get(recipient_status),
                         'charge_processing_fee': True,
-                        'percentage': settings.PLATFORM_COMMISSION or 0,
+                        'percentage': comission,
                         'charge_remainder_fee': True,
                     },
                     {
                         'recipient_id': self.professional.recipient['id'],
                         'charge_processing_fee': False,
-                        'percentage': (100 - (settings.PLATFORM_COMMISSION or 0)),
+                        'percentage': (100 - (comission)),
                         'charge_remainder_fee': False,
                     },
                 ]
@@ -178,6 +179,17 @@ class CashOut(models.Model):
                 'id': self.pagerme_id
             })
         return self.__transfer
+
+    @staticmethod
+    def create_withdraw(cls, professional:Professional):
+        withdraw = cls(
+            professional=professional,
+            value=professional.cash,
+        )
+        withdraw.full_clean()
+        withdraw.save()
+        withdraw.withdraw()
+        return withdraw
 
     def cancel_withdraw(self):
         if self.withdraw and self.pagerme_id:
