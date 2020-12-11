@@ -243,6 +243,9 @@ class Users(viewsets.ViewSet):
             return Response(recipient)
         return Response(serializer.errors, status=400)
 
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
+    def withdraw(self, request, *args, **kwargs):
+        pass
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'

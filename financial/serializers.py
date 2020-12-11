@@ -28,3 +28,13 @@ class PaymentSerializer(serializers.ModelSerializer):
             'paid',
             'transaction',
         )
+
+class CashOutSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = models.CashOut
+        fields = (
+            'value',
+            'withdrawn',
+            
+        )

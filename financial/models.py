@@ -162,7 +162,7 @@ class CashOut(models.Model):
     registration_date = models.DateTimeField(
         auto_now=True,
     )
-    withdrawn = models.BooleanField(
+    was_withdrawn = models.BooleanField(
         default=False,
     )
     pagerme_id = models.CharField(
@@ -188,17 +188,17 @@ class CashOut(models.Model):
         )
         withdraw.full_clean()
         withdraw.save()
-        withdraw.withdraw()
+        withdraw.to_withdraw()
         return withdraw
 
     def cancel_withdraw(self):
-        if self.withdraw and self.pagerme_id:
+        if self.was_withdrawn and self.pagerme_id:
             self.__transfer = transfer.cancel(self.pagerme_id)
             if self.__transfer['status'] == 'canceled':
-                self.withdraw = False
+                self.was_withdrawn = False
         return self.__transfer
 
-    def withdraw(self):
+    def to_withdraw(self):
         if not self.withdraw and not self.pagerme_id:
             self.__transfer = transfer.create(dict(
                 amount=int(self.value * (100 - settings.CASH_OUT_COMMISSION)),
