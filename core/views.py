@@ -1,7 +1,3 @@
-from os import stat
-
-from pagarme import recipient
-from core.models import Availability
 from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
@@ -11,8 +7,9 @@ from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
+import financial
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -131,6 +128,7 @@ class Users(viewsets.ViewSet):
     serializers_map = {
         'recipient': serializers.RecipientSerializer,
         'create_recipient': serializers.RecipientSerializer,
+        'withdraw': financial.serializers.CashOutSerializer
     }
 
     @property
@@ -245,7 +243,11 @@ class Users(viewsets.ViewSet):
 
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
     def withdraw(self, request, *args, **kwargs):
-        pass
+        serializer = self.serializer_class(
+            instance=request.user.professional.cash_outs,
+            context={'request': request}
+        )
+        return Response(serializer.data)
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'

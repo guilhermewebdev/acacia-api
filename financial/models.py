@@ -3,6 +3,7 @@ import re
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
 import pagarme
+from pagarme.resources import handler_request
 from core.models import Professional
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -165,7 +166,7 @@ class CashOut(models.Model):
     was_withdrawn = models.BooleanField(
         default=False,
     )
-    pagerme_id = models.CharField(
+    pagarme_id = models.CharField(
         max_length=6,
         null=True,
         blank=True,
@@ -174,10 +175,8 @@ class CashOut(models.Model):
 
     @property
     def transfer(self):
-        if (self.__transfer == {}) and self.pagerme_id:
-            self.__transfer = transfer.find_by({
-                'id': self.pagerme_id
-            })
+        if not self.__transfer and self.pagarme_id:
+            self.__transfer = handler_request.get(f'https://api.pagar.me/1/transfers/{self.pagarme_id}')
         return self.__transfer
 
     @staticmethod
@@ -192,20 +191,20 @@ class CashOut(models.Model):
         return withdraw
 
     def cancel_withdraw(self):
-        if self.was_withdrawn and self.pagerme_id:
-            self.__transfer = transfer.cancel(self.pagerme_id)
+        if self.was_withdrawn and self.pagarme_id:
+            self.__transfer = transfer.cancel(self.pagarme_id)
             if self.__transfer['status'] == 'canceled':
                 self.was_withdrawn = False
         return self.__transfer
 
     def to_withdraw(self):
-        if not self.withdraw and not self.pagerme_id:
+        if not self.withdraw and not self.pagarme_id:
             self.__transfer = transfer.create(dict(
                 amount=int(self.value * (100 - settings.CASH_OUT_COMMISSION)),
                 recipient_id=self.professional.recipient.get('id', None)
             ))
             if 'id' in self.__transfer:
-                self.pagerme_id = self.__transfer['id']
+                self.pagarme_id = self.__transfer['id']
                 self.withdraw = True
         return self.__transfer
 
