@@ -1,3 +1,4 @@
+from financial.models import CashOut
 from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
@@ -128,7 +129,8 @@ class Users(viewsets.ViewSet):
     serializers_map = {
         'recipient': serializers.RecipientSerializer,
         'create_recipient': serializers.RecipientSerializer,
-        'withdraw': financial.serializers.CashOutSerializer
+        'cash_out': financial.serializers.CashOutSerializer,
+        'to_withdraw': financial.serializers.CashOutSerializer,
     }
 
     @property
@@ -242,12 +244,18 @@ class Users(viewsets.ViewSet):
         return Response(serializer.errors, status=400)
 
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
-    def withdraw(self, request, *args, **kwargs):
+    def cash_out(self, request, *args, **kwargs):
         serializer = self.serializer_class(
             instance=request.user.professional.cash_outs,
             context={'request': request}
         )
         return Response(serializer.data)
+
+    @cash_out.mapping.post
+    def to_withdraw(self, request, *args, **kwargs):
+        withdraw = CashOut.create_withdraw(request.user.professional)
+        serializer = self.serializer_class(instance=withdraw)
+        return Response(data=serializer.data)
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'
