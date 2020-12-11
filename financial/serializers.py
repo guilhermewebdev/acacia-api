@@ -35,6 +35,6 @@ class CashOutSerializer(serializers.ModelSerializer):
         model = models.CashOut
         fields = (
             'value',
-            'withdrawn',
+            'was_withdrawn',
             'transfer',
         )

@@ -179,7 +179,7 @@ class CashOut(models.Model):
             self.__transfer = handler_request.get(f'https://api.pagar.me/1/transfers/{self.pagarme_id}')
         return self.__transfer
 
-    @staticmethod
+    @classmethod
     def create_withdraw(cls, professional:Professional):
         withdraw = cls(
             professional=professional,
@@ -198,14 +198,15 @@ class CashOut(models.Model):
         return self.__transfer
 
     def to_withdraw(self):
-        if not self.withdraw and not self.pagarme_id:
-            self.__transfer = transfer.create(dict(
+        if not self.was_withdrawn and not self.pagarme_id:
+            data = dict(
                 amount=int(self.value * (100 - settings.CASH_OUT_COMMISSION)),
-                recipient_id=self.professional.recipient.get('id', None)
-            ))
+                recipient_id=self.professional.pagarme_id
+            )
+            self.__transfer = transfer.create(data)
             if 'id' in self.__transfer:
                 self.pagarme_id = self.__transfer['id']
-                self.withdraw = True
+                self.was_withdrawn = True
         return self.__transfer
 
     def validate_value(self):

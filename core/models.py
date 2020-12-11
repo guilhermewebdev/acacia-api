@@ -533,6 +533,7 @@ class Professional(models.Model):
                 "name": self.user.full_name,
                 "email": self.user.email,
                 "postback_url": self.postback_url,
+                "automatic_anticipation_enabled": True,
                 "bank_account": {
                     "agencia": agency, 
                     "agencia_dv": agency_dv, 

@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
-import financial
+import financial.serializers as financial
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -129,8 +129,8 @@ class Users(viewsets.ViewSet):
     serializers_map = {
         'recipient': serializers.RecipientSerializer,
         'create_recipient': serializers.RecipientSerializer,
-        'cash_out': financial.serializers.CashOutSerializer,
-        'to_withdraw': financial.serializers.CashOutSerializer,
+        'cash_out': financial.CashOutSerializer,
+        'to_withdraw': financial.CashOutSerializer,
     }
 
     @property

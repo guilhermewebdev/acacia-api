@@ -1,3 +1,4 @@
+from services.models import Job, Proposal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
@@ -7,6 +8,14 @@ from rest_framework import response
 from .models import Address, Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
 from rest_framework.test import APIClient
+from mock import patch
+
+TODAY = now()
+
+def pagarme_mock(info):
+    return {
+        'id': 'ddd'
+    }
 
 class AxesClient(Client):
 
@@ -228,6 +237,16 @@ class TestUserREST(TestCase):
             born=(now() - timedelta(days=10000)).date(),
             cpf='829.354.190-30',
         )
+        address = Address(
+            user=self.user,
+            city='Longa vida',
+            state='MG',
+            street='Rua tal',
+            street_number='45',
+            zipcode='32444-000',
+            neighborhood='Bairro tal',
+        )
+        address.save()
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
                 email='test@tstd.com',
@@ -259,6 +278,23 @@ class TestUserREST(TestCase):
             'account_dv': '1',
             'legal_name': 'HOUSE TARGARYEN'
         })
+        self.proposal = Proposal(
+            client=self.user,
+            professional=self.professional,
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=TODAY + timedelta(days=1),
+            end_datetime=TODAY + timedelta(days=3),
+            value=200.00,
+            description='Lorem Ipsum dolores'
+        )
+        self.proposal.save()
+        self.proposal.accept()
+        self.job:Job = self.proposal.job
+        self.job.pay(0)
+
     
     def test_get_profile(self):
         client.login(username=self.user.email, password='abda1234')
@@ -529,3 +565,11 @@ class TestUserREST(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
         self.assertIn('id', response.json())
+
+    @patch('pagarme.transfer.create', side_effect=pagarme_mock)
+    def test_to_cash_out(self, mock):
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.post(f'/profile/cash_out.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('transfer', response.json())
