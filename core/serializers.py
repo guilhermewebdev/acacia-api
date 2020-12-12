@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from core.forms import ERROR_MESSAGES
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
@@ -226,3 +227,35 @@ class CreationUserSerializer(serializers.ModelSerializer):
             'uuid',
         )
         lookup_field = 'uuid'
+
+class RecipientSerializer(serializers.Serializer):
+    agency = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{4}$'),]
+    )
+    agency_dv = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{1}$'),]
+    )
+    bank_code = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{3}$'),]
+    )
+    account = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{5}$'),]
+    )
+    account_dv = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[0-9]{1}$'),]
+    )
+    legal_name = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[RegexValidator('^[A-z ]{5,}$'),]
+    )

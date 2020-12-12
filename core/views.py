@@ -1,5 +1,4 @@
-from os import stat
-from core.models import Availability
+from financial.models import CashOut
 from core.serializers import AvailabilitiesSerializer
 from django.db.models.query_utils import Q
 from . import models, serializers, forms
@@ -9,8 +8,9 @@ from django.contrib.postgres.search import SearchVector
 from django.utils.dateparse import parse_time, parse_date
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
+import financial.serializers as financial
 
 def get_week(date: str) -> int:
     if not date: return None
@@ -126,9 +126,18 @@ class Users(viewsets.ViewSet):
     auth_actions = ('customer', 'create_customer', 'availabilities', 'put', 'get', 'patch', 'delete')
     auth_methods = ('PUT', 'GET', 'PATCH', 'DELETE')
     allowed_actions = ('activate',)
+    serializers_map = {
+        'recipient': serializers.RecipientSerializer,
+        'create_recipient': serializers.RecipientSerializer,
+        'cancel_cash_out': financial.CashOutSerializer,
+        'cash_out': financial.CashOutSerializer,
+        'to_withdraw': financial.CashOutSerializer,
+    }
 
     @property
     def serializer_class(self):
+        if self.action in self.serializers_map.keys():
+            return self.serializers_map[self.action]
         if self.action in self.auth_actions or self.request.method in self.auth_methods:
             return serializers.PrivateUserSerializer
         return serializers.CreationUserSerializer
@@ -192,7 +201,9 @@ class Users(viewsets.ViewSet):
     @action(methods=['get'], detail=False)
     def customer(self, request, *args, **kwargs):
         user: models.User = request.user
-        return Response(user.customer, content_type='application/json')
+        if user.customer:
+            return Response(user.customer)
+        return Response(status=404)
 
     @customer.mapping.post
     def create_customer(self, request, *args, **kwargs):
@@ -217,6 +228,46 @@ class Users(viewsets.ViewSet):
             data = request.user.create_card(form.full_cleaned_data)
             return Response(data=data)
         return Response(form.errors, status=400)
+
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
+    def recipient(self, request, *args, **kwargs):
+        recipient = request.user.professional.recipient
+        if recipient:
+            return Response(data=recipient)
+        return Response(status=404)
+
+    @recipient.mapping.post
+    def create_recipient(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            recipient = request.user.professional.create_recipient(**serializer.validated_data)
+            return Response(recipient)
+        return Response(serializer.errors, status=400)
+
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, IsProfessional])
+    def cash_out(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            instance=request.user.professional.cash_outs,
+            context={'request': request},
+            many=True,
+        )
+        return Response(serializer.data)
+
+    @cash_out.mapping.delete
+    def cancel_cash_out(self, request, *args, **kwargs):
+        cash_out:CashOut = get_object_or_404(CashOut, uuid=request.data.get('uuid'))
+        cash_out.cancel_withdraw()
+        serializer = self.serializer_class(
+            instance=cash_out,
+            context={'request': request}
+        )
+        return Response(data=serializer.data)
+
+    @cash_out.mapping.post
+    def to_withdraw(self, request, *args, **kwargs):
+        withdraw = CashOut.create_withdraw(request.user.professional)
+        serializer = self.serializer_class(instance=withdraw)
+        return Response(data=serializer.data)
 
 class PrivateAvailabilities(viewsets.ViewSet):
     lookup_field = 'uuid'

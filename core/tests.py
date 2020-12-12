@@ -1,3 +1,5 @@
+from financial.models import CashOut
+from services.models import Job, Proposal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
@@ -7,6 +9,15 @@ from rest_framework import response
 from .models import Address, Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
 from rest_framework.test import APIClient
+from mock import patch
+
+TODAY = now()
+
+def pagarme_mock(info):
+    return {
+        'id': 'ddd',
+        'status': 'canceled',
+    }
 
 class AxesClient(Client):
 
@@ -228,12 +239,23 @@ class TestUserREST(TestCase):
             born=(now() - timedelta(days=10000)).date(),
             cpf='829.354.190-30',
         )
+        address = Address(
+            user=self.user,
+            city='Longa vida',
+            state='MG',
+            street='Rua tal',
+            street_number='45',
+            zipcode='32444-000',
+            neighborhood='Bairro tal',
+        )
+        address.save()
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
                 email='test@tstd.com',
                 password='abda1234',
                 is_active=True,
-                full_name='Bernardo Lagosta'
+                full_name='Bernardo Lagosta',
+                cpf='059.391.440-63',
             ),
             avg_price=99,
             skills=['CI', 'AE', 'EM'],
@@ -242,6 +264,39 @@ class TestUserREST(TestCase):
         )
         self.professional.user.save()
         self.professional.save()
+        self.user.create_customer()
+        card = {
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        }
+        self.user.create_card(card)
+        self.professional.create_recipient(**{
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        })
+        self.proposal = Proposal(
+            client=self.user,
+            professional=self.professional,
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=TODAY + timedelta(days=1),
+            end_datetime=TODAY + timedelta(days=3),
+            value=200.00,
+            description='Lorem Ipsum dolores'
+        )
+        self.proposal.save()
+        self.proposal.accept()
+        self.job:Job = self.proposal.job
+        self.job.pay(0)
+
     
     def test_get_profile(self):
         client.login(username=self.user.email, password='abda1234')
@@ -485,15 +540,52 @@ class TestUserREST(TestCase):
 
     def test_list_cards(self):
         client.login(username=self.user.email, password='abda1234')
-        self.user.create_customer()
-        card = {
-            "card_expiration_date": "1122",
-            "card_number": "4018720572598048",
-            "card_cvv": "123",
-            "card_holder_name": "Cersei Lannister"
-        }
-        self.user.create_card(card)
+        
         response = client.get('/profile/cards.json')
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
         self.assertGreater(len(response.json()), 0)
+
+    def test_create_recipient(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        recipient = {
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        }
+        response = client.post('/profile/recipient.json', data=recipient, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('id', response.json())
+
+    def test_get_recipient(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.get('/profile/recipient.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('id', response.json())
+
+    @patch('pagarme.transfer.create', side_effect=pagarme_mock)
+    def test_to_withdraw(self, mock):
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.post(f'/profile/cash_out.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('transfer', response.json())
+
+    @patch('pagarme.transfer.create', side_effect=pagarme_mock)
+    @patch('pagarme.transfer.cancel', side_effect=pagarme_mock)
+    def test_to_cancel_cash_out(self, *args, **kwargs):
+        client.login(username=self.professional.user.email, password='abda1234')
+        cash_out = CashOut.create_withdraw(self.professional)
+        self.assert_(cash_out.was_withdrawn)
+        data = {'uuid': str(cash_out.uuid)}
+        response = client.delete(f'/profile/cash_out.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('transfer', response.json())
+        self.assertIn('was_withdrawn', response.json(), response.json())
+        self.assertEqual    (False, response.json()['was_withdrawn'], response.json())

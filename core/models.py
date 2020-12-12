@@ -496,14 +496,19 @@ class Professional(models.Model):
     saved_in_pagarme = models.BooleanField(
         default=False
     )
+    pagarme_id = models.CharField(
+        null=True,
+        blank=True,
+        max_length=100,
+    )
     __recipient = {}
 
     @property
     def recipient(self):
         if self.saved_in_pagarme and not self.__recipient:
-            self.__recipient = recipient.find_by({
-                "email": self.user.email
-            })
+            self.__recipient = handler_request.get(
+                f'https://api.pagar.me/1/recipients/{self.pagarme_id}'
+            )
         return self.__recipient
     
     @property
@@ -516,28 +521,28 @@ class Professional(models.Model):
 
     @property
     def cash(self):
-        cash_in = float(self.receipts.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        cash_out = float(self.cash_outs.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        return cash_in - cash_out
+        cash = Professional.objects.filter(uuid=str(self.uuid)).aggregate(
+            cash_in=models.Sum('receipts__value'), cash_out=models.Sum('cash_outs__value'),
+        )
+        return (cash.get('cash_in', 0) or 0) - (cash.get('cash_out', 0) or 0)
 
-    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name, account_type):
-        unmasked_cpf = re.sub('[^0-9]', '', self.cpf)
+    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name):
         if not self.saved_in_pagarme:
             self.__recipient = recipient.create({
                 "type": "individual",
-                "document_number": unmasked_cpf,
                 "name": self.user.full_name,
                 "email": self.user.email,
                 "postback_url": self.postback_url,
+                "automatic_anticipation_enabled": True,
                 "bank_account": {
                     "agencia": agency, 
                     "agencia_dv": agency_dv, 
                     "bank_code": bank_code, 
                     "conta": account, 
                     "conta_dv": account_dv, 
-                    "document_number": unmasked_cpf, 
+                    "document_type": 'cpf',
+                    "document_number": self.user.unmasked_cpf, 
                     "legal_name": legal_name.upper(), 
-                    "type": account_type,
                 },
                 "phone_numbers": [
                     {
@@ -552,10 +557,12 @@ class Professional(models.Model):
                     }
                 ]
             })
-            if self.__recipient['id'] is not None:
+            if self.__recipient.get('id') is not None:
                 self.saved_in_pagarme = True
+                self.pagarme_id = self.__recipient['id']
+                self.save(update_fields=['saved_in_pagarme', 'pagarme_id'])
         return self.recipient
     
     @staticmethod
     def get_deleted_professional(cls):
-        return cls.object.get(user__email='deleted@user.com')
+        return cls.objects.get(user__email='deleted@user.com')
