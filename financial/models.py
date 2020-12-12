@@ -154,8 +154,13 @@ class Payment(models.Model):
         return super(Payment, self).full_clean(*args, **kwargs)
 
 class CashOut(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False
+    )
     professional = models.ForeignKey(
-        Professional,
+        'core.Professional',
         on_delete=models.CASCADE,
         related_name='cash_outs'
     )

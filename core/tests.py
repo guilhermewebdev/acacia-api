@@ -1,3 +1,4 @@
+from financial.models import CashOut
 from services.models import Job, Proposal
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -14,7 +15,8 @@ TODAY = now()
 
 def pagarme_mock(info):
     return {
-        'id': 'ddd'
+        'id': 'ddd',
+        'status': 'canceled',
     }
 
 class AxesClient(Client):
@@ -567,9 +569,23 @@ class TestUserREST(TestCase):
         self.assertIn('id', response.json())
 
     @patch('pagarme.transfer.create', side_effect=pagarme_mock)
-    def test_to_cash_out(self, mock):
+    def test_to_withdraw(self, mock):
         client.login(username=self.professional.user.email, password='abda1234')
         response = client.post(f'/profile/cash_out.json')
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
         self.assertIn('transfer', response.json())
+
+    @patch('pagarme.transfer.create', side_effect=pagarme_mock)
+    @patch('pagarme.transfer.cancel', side_effect=pagarme_mock)
+    def test_to_cancel_cash_out(self, *args, **kwargs):
+        client.login(username=self.professional.user.email, password='abda1234')
+        cash_out = CashOut.create_withdraw(self.professional)
+        self.assert_(cash_out.was_withdrawn)
+        data = {'uuid': str(cash_out.uuid)}
+        response = client.delete(f'/profile/cash_out.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('transfer', response.json())
+        self.assertIn('was_withdrawn', response.json(), response.json())
+        self.assertEqual    (False, response.json()['was_withdrawn'], response.json())

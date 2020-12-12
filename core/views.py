@@ -129,6 +129,7 @@ class Users(viewsets.ViewSet):
     serializers_map = {
         'recipient': serializers.RecipientSerializer,
         'create_recipient': serializers.RecipientSerializer,
+        'cancel_cash_out': financial.CashOutSerializer,
         'cash_out': financial.CashOutSerializer,
         'to_withdraw': financial.CashOutSerializer,
     }
@@ -247,9 +248,20 @@ class Users(viewsets.ViewSet):
     def cash_out(self, request, *args, **kwargs):
         serializer = self.serializer_class(
             instance=request.user.professional.cash_outs,
-            context={'request': request}
+            context={'request': request},
+            many=True,
         )
         return Response(serializer.data)
+
+    @cash_out.mapping.delete
+    def cancel_cash_out(self, request, *args, **kwargs):
+        cash_out:CashOut = get_object_or_404(CashOut, uuid=request.data.get('uuid'))
+        cash_out.cancel_withdraw()
+        serializer = self.serializer_class(
+            instance=cash_out,
+            context={'request': request}
+        )
+        return Response(data=serializer.data)
 
     @cash_out.mapping.post
     def to_withdraw(self, request, *args, **kwargs):

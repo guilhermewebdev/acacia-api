@@ -30,10 +30,12 @@ class PaymentSerializer(serializers.ModelSerializer):
         )
 
 class CashOutSerializer(serializers.ModelSerializer):
+    transfer = serializers.JSONField(read_only=True)
     
     class Meta:
         model = models.CashOut
         fields = (
+            'uuid',
             'value',
             'was_withdrawn',
             'transfer',
