@@ -1,5 +1,9 @@
+from functools import reduce
+import re
 from django.core.exceptions import ValidationError
-from services.models import Job
+from django.forms.models import model_to_dict
+import pagarme
+from pagarme.resources import handler_request
 from core.models import Professional
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -28,7 +32,7 @@ class Payment(models.Model):
     )
     value = models.FloatField()
     job = models.OneToOneField(
-        Job,
+        'services.Job',
         on_delete=models.CASCADE,
         related_name='payment',
     )
@@ -37,6 +41,10 @@ class Payment(models.Model):
     )
     paid = models.BooleanField(
         default=False,
+    )
+    pagarme_id = models.IntegerField(
+        null=True,
+        blank=True,
     )
     __transaction = None
 
@@ -54,42 +62,86 @@ class Payment(models.Model):
     def postback_url(self):
         return f'{settings.HOST}/postback/payment/{self.uuid}/'
 
-    def pay(self, card_hash, street, street_number, zipcode, state, city, neighborhood, country='BR', complementary='_'):
+    def validate_recipient(self):
+        if not self.professional.recipient:
+            raise ValidationError('The professional should create a recipient account')
+
+    def pay(self, card_index=0):
+        self.client.validate_customer()
+        self.client.validate_cards()
+        self.validate_recipient()
+        if not hasattr(self.client, 'address'):
+            raise ValidationError('The user address is required')
         if not self.paid:
-            self.__transaction = transaction.create(dict(
-                amount=int(self.value * 100),
-                card_hash=card_hash,
-                customer=self.client.customer,
-                payment_method='credit_card',
-                postback_url=self.postback_url,
-                soft_descriptor=settings.PAYMENT_DESCRIPTION,
-                billing=dict(
-                    street=street,
-                    street_number=street_number,
-                    zipcode=zipcode,
-                    state=state,
-                    city=city,
-                    neighborhood=neighborhood,
-                    country=country,
-                    complementary=complementary,
-                ),
-                items=[dict(
-                    id=self.job.pk,
-                    title=self.job.proposal.description,
-                    unit_price=self.value,
-                    quantity=1,
-                    tangible=False,
-                    category='Services',
-                    date=f'{self.job.start_datetime.year}-{self.job.start_datetime.month}-{self.job.start_datetime.day}'
-                )],
-                metadata=dict(
-                    payment=self.uuid,
-                )
-            ))
+            billing_fields = ['zipcode', 'street', 'street_number', 'state', 'city', 'neighborhood']
+            address = model_to_dict(instance=self.client.address, fields=billing_fields)
+            address['zipcode'] = re.sub('[^0-9]', '', address.get('zipcode'))
+            default_recipient = pagarme.recipient.default_recipient()
+            recipient_status = 'live' if settings.PRODUCTION else 'test'
+            comission = settings.PLATFORM_COMMISSION or 0
+            customer = {
+                'external_id': str(self.client.uuid),
+                'name': self.client.full_name,
+                'email': self.client.email,
+                'country': 'br',
+                'type': 'individual',
+                'phone_numbers': self.client.customer['phone_numbers'],
+                'documents': [{
+                    'type': 'cpf',
+                    'number': self.client.unmasked_cpf
+                }],
+            }
+            data = {
+                'amount': int(self.value * 100),
+                'card_id': self.client.cards[card_index]['id'],
+                'customer': customer,
+                'payment_method': 'credit_card',
+                'async': False,
+                'postback_url': self.postback_url,
+                'soft_descriptor': settings.PAYMENT_DESCRIPTION,
+                'billing': {
+                    'name': self.client.full_name,
+                    'address': {
+                        **address,
+                        'country': 'br'
+                    }
+                },
+                'items': [{
+                    'id': str(self.job.uuid),
+                    'title': self.job.proposal.description,
+                    'unit_price': int(self.value * 100),
+                    'quantity': 1,
+                    'tangible': False,
+                    'category': 'Services',
+                    'date': self.job.start_datetime.date().isoformat()
+                }],
+                'metadata': {
+                    'payment': str(self.uuid),
+                    'job': str(self.job.uuid),
+                    'professional': self.professional.user.full_name,
+                    'client': self.client.full_name,
+                },
+                'split_rules': [
+                    {
+                        'recipient_id': default_recipient.get(recipient_status),
+                        'charge_processing_fee': True,
+                        'percentage': comission,
+                        'charge_remainder_fee': True,
+                    },
+                    {
+                        'recipient_id': self.professional.recipient['id'],
+                        'charge_processing_fee': False,
+                        'percentage': (100 - (comission)),
+                        'charge_remainder_fee': False,
+                    },
+                ]
+            }
+            self.__transaction = transaction.create(data)
             if self.__transaction.get('status', None) == 'paid':
                 self.paid = True
-                self.save(update_fields=['paid'])
-        return self.paid, self.transaction
+                self.pagarme_id = self.__transaction.get('id')
+                self.save(update_fields=['paid', 'pagarme_id'])
+        return self.transaction
 
     def validate_value(self):
         if self.value != self.job.value:
@@ -102,8 +154,13 @@ class Payment(models.Model):
         return super(Payment, self).full_clean(*args, **kwargs)
 
 class CashOut(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False
+    )
     professional = models.ForeignKey(
-        Professional,
+        'core.Professional',
         on_delete=models.CASCADE,
         related_name='cash_outs'
     )
@@ -111,10 +168,10 @@ class CashOut(models.Model):
     registration_date = models.DateTimeField(
         auto_now=True,
     )
-    withdrawn = models.BooleanField(
+    was_withdrawn = models.BooleanField(
         default=False,
     )
-    pagerme_id = models.CharField(
+    pagarme_id = models.CharField(
         max_length=6,
         null=True,
         blank=True,
@@ -123,28 +180,38 @@ class CashOut(models.Model):
 
     @property
     def transfer(self):
-        if (self.__transfer == {}) and self.pagerme_id:
-            self.__transfer = transfer.find_by({
-                'id': self.pagerme_id
-            })
+        if not self.__transfer and self.pagarme_id:
+            self.__transfer = handler_request.get(f'https://api.pagar.me/1/transfers/{self.pagarme_id}')
         return self.__transfer
+
+    @classmethod
+    def create_withdraw(cls, professional:Professional):
+        withdraw = cls(
+            professional=professional,
+            value=professional.cash,
+        )
+        withdraw.full_clean()
+        withdraw.save()
+        withdraw.to_withdraw()
+        return withdraw
 
     def cancel_withdraw(self):
-        if self.withdraw and self.pagerme_id:
-            self.__transfer = transfer.cancel(self.pagerme_id)
+        if self.was_withdrawn and self.pagarme_id:
+            self.__transfer = transfer.cancel(self.pagarme_id)
             if self.__transfer['status'] == 'canceled':
-                self.withdraw = False
+                self.was_withdrawn = False
         return self.__transfer
 
-    def withdraw(self):
-        if not self.withdraw and not self.pagerme_id:
-            self.__transfer = transfer.create(dict(
+    def to_withdraw(self):
+        if not self.was_withdrawn and not self.pagarme_id:
+            data = dict(
                 amount=int(self.value * (100 - settings.CASH_OUT_COMMISSION)),
-                recipient_id=self.professional.recipient.get('id', None)
-            ))
+                recipient_id=self.professional.pagarme_id
+            )
+            self.__transfer = transfer.create(data)
             if 'id' in self.__transfer:
-                self.pagerme_id = self.__transfer['id']
-                self.withdraw = True
+                self.pagarme_id = self.__transfer['id']
+                self.was_withdrawn = True
         return self.__transfer
 
     def validate_value(self):

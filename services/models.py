@@ -1,9 +1,11 @@
+from financial.models import Payment
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from core.models import OCCUPATIONS, Professional, STATES, SERVICES, ValidateChoices
 from django.db import models
 from django.contrib.auth import get_user_model
+import uuid
 
 User = get_user_model()
 
@@ -14,12 +16,17 @@ def future_validator(date_time):
         )
 
 class Rating(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+    )
     client = models.ForeignKey(
         User,
         on_delete = models.SET(User.get_deleted_user),
         related_name='rates',
     )
-    job = models.ForeignKey(
+    job = models.OneToOneField(
         'Job',
         on_delete = models.CASCADE,
         related_name='rate',
@@ -41,9 +48,16 @@ class Rating(models.Model):
     def full_clean(self, *args, **kwargs) -> None:
         self.validate_user()
         return super(Rating, self).full_clean(*args, **kwargs)
+  
     class Meta:
         unique_together = ('client', 'job')
+
 class Job(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+    )
     proposal = models.OneToOneField(
         'Proposal',
         on_delete=models.PROTECT,
@@ -72,6 +86,12 @@ class Job(models.Model):
         blank=True,
     )
 
+    @property
+    def paid(self):
+        if hasattr(self, 'payment'):
+            return self.payment.paid
+        return False
+
     def rate(self, user, grade):
         if not self.end_datetime:
             raise ValidationError(
@@ -89,6 +109,19 @@ class Job(models.Model):
         rate.full_clean()
         rate.save()
         return rate
+
+    def pay(self, card_index):
+        if not self.paid:
+            payment = Payment(
+                client=self.client,
+                professional=self.professional,
+                value=self.value,
+                job=self,
+            )
+            payment.full_clean()
+            payment.save()
+            payment.pay(card_index)
+            return payment
 
     def validate_client(self):
         if self.client != self.proposal.client:
@@ -157,15 +190,22 @@ class AcceptMixin(models.Model):
         abstract = True
 
 class Proposal(AcceptMixin):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+    )
     client = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='proposals',
+        editable=False,
     )
     professional = models.ForeignKey(
         Professional,
         on_delete=models.CASCADE,
         related_name='proposals',
+        editable=False,
     )
     city = models.CharField(
         max_length=100,
@@ -230,6 +270,11 @@ class Proposal(AcceptMixin):
         return super(Proposal, self).full_clean(*args, **kwargs)
 
 class CounterProposal(AcceptMixin):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+    )
     proposal = models.OneToOneField(
         Proposal,
         related_name='counter_proposal',
@@ -269,6 +314,11 @@ class CounterProposal(AcceptMixin):
         if (self.value < (0.8 * self.proposal.value)):
             raise ValidationError('The counter offer must be at least 20% more than the offer')
     
+    def validate_proposal(self):
+        if self.proposal.accepted != None:
+            raise ValidationError('The proposal already be accepted or rejected')
+
     def full_clean(self, *args, **kwargs):
         self.validate_value()
+        self.validate_proposal()
         return super(CounterProposal, self).full_clean(*args, **kwargs)

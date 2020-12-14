@@ -22,7 +22,7 @@ test:
     DB_PORT: '5432'
     SECRET_KEY: h!kd%9yx+7y*it958@5=$=7h#_@reb=)3s)3t7%2qowa3=x&8o
   before_script:
-    - pip install -r requirements.txt
+    - pip install -r requirements-dev.txt
   script:
     - python manage.py test
 

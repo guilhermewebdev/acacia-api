@@ -1,12 +1,23 @@
+from financial.models import CashOut
+from services.models import Job, Proposal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
 from django.http.request import HttpRequest
 from django.test import TestCase, Client
 from rest_framework import response
-from .models import Availability, User, Professional, account_activation_token
+from .models import Address, Availability, User, Professional, account_activation_token
 from django.utils.timezone import now, timedelta
 from rest_framework.test import APIClient
+from mock import patch
+
+TODAY = now()
+
+def pagarme_mock(info):
+    return {
+        'id': 'ddd',
+        'status': 'canceled',
+    }
 
 class AxesClient(Client):
 
@@ -38,17 +49,12 @@ class TestUser(TestCase):
             full_name='Linuz Torvalds',
             cellphone='31988776655',
             password='senha',
+            cpf='567.933.940-45',
         )
         user.full_clean()
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            cpf="529.982.247-25",
-            rg='mg3434032',
             skills=['AC', 'AD', 'HC'],
             occupation='CI',
             avg_price=80,
@@ -69,13 +75,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="601.554.963-56",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.040'
@@ -92,13 +91,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='1040'
@@ -115,13 +107,6 @@ class TestUser(TestCase):
         user.save()
         professional = Professional(
             user=user,
-            state='My',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
-            avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
@@ -150,19 +135,18 @@ class ProfessionalTestREST(TestCase):
                 email='test@tstd.com',
                 password='abda1234',
                 is_active=True,
-                full_name='Bernardo Lagosta'
+                full_name='Bernardo Lagosta',
+                address=Address(
+                    city='Longa vida',
+                    state='MG',
+                )
             ),
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
             avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
         )
+        self.professional.user.address.save()
         self.professional.user.save()
         self.professional.save()
 
@@ -178,7 +162,7 @@ class ProfessionalTestREST(TestCase):
             'is_active': self.professional.user.is_active,
             'avg_price': float(self.professional.avg_price),
             'state': 'MG',
-            'city': self.professional.city,
+            'city': self.professional.user.address.city,
             'occupation': self.professional.occupation,
             'skills': self.professional.skills,
             'avg_rating': self.professional.avg_rating,
@@ -195,13 +179,19 @@ class ProfessionalTestREST(TestCase):
             'full_name': 'Pindamonhagaba da Silva',
             'email': 'dudu@google.com',
             'cpf': '567.933.940-45',
-            'rg': 'rj343534',
-            'address': 'Lá mesmo',
-            'zip_code': '33000-334',
+            'address':  {
+                'street': 'Lá mesmo',
+                'street_number': '40',
+                'zipcode': '36000-222',
+                'state': 'MG',
+                'city': 'Belo Origami',
+                'neighborhood': 'Centro',
+                'complementary': 'Casa',
+            },
             'coren': 39.999
         }
-        response = client.post('/professionals/', data)
-        self.assertEqual(response.status_code, 200)
+        response = client.post('/professionals.json', data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
         self.assertIn('email', response.json())
         self.assertIn('uuid', response.json())
 
@@ -223,7 +213,8 @@ class ProfessionalTestREST(TestCase):
             f'/professionals/{str(self.professional.uuid)}/availabilities.json',
         )
         json = response.json()
-        self.assertEqual(json[0].get('uuid'), str(availability.uuid))
+        self.assertEqual(len(json), 1, response.content)
+        self.assertEqual(json[0].get('uuid'), str(availability.uuid), response.content)
 
     def test_unauthorized_deletion(self):
         response = client.delete(f'/professionals/{str(self.professional.uuid)}.json')
@@ -242,31 +233,74 @@ class TestUserREST(TestCase):
             email='test@tst.com',
             password='abda1234',
             is_active=True,
+            cellphone='988887777',
+            cellphone_ddd='55',
+            full_name='Crocodilo Dande',
+            born=(now() - timedelta(days=10000)).date(),
+            cpf='829.354.190-30',
         )
+        address = Address(
+            user=self.user,
+            city='Longa vida',
+            state='MG',
+            street='Rua tal',
+            street_number='45',
+            zipcode='32444-000',
+            neighborhood='Bairro tal',
+        )
+        address.save()
         self.professional = Professional.objects.create(
             user=User.objects.create_user(
                 email='test@tstd.com',
                 password='abda1234',
                 is_active=True,
-                full_name='Bernardo Lagosta'
+                full_name='Bernardo Lagosta',
+                cpf='059.391.440-63',
             ),
-            state='MG',
-            city='Belo Horizonte',
-            address='Centro',
-            zip_code='36200-000',
             avg_price=99,
-            cpf="529.982.247-25",
-            rg='mg343402',
             skills=['CI', 'AE', 'EM'],
             occupation='CI',
             coren='10.400'
         )
         self.professional.user.save()
         self.professional.save()
+        self.user.create_customer()
+        card = {
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        }
+        self.user.create_card(card)
+        self.professional.create_recipient(**{
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        })
+        self.proposal = Proposal(
+            client=self.user,
+            professional=self.professional,
+            city='Curitiba',
+            state='PR',
+            professional_type='AE',
+            service_type='AC',
+            start_datetime=TODAY + timedelta(days=1),
+            end_datetime=TODAY + timedelta(days=3),
+            value=200.00,
+            description='Lorem Ipsum dolores'
+        )
+        self.proposal.save()
+        self.proposal.accept()
+        self.job:Job = self.proposal.job
+        self.job.pay(0)
+
     
     def test_get_profile(self):
         client.login(username=self.user.email, password='abda1234')
-        response = client.get('/users/profile.json')
+        response = client.get('/profile.json')
         data = response.json()
         self.assertIn('uuid', data)
         self.assertEqual(data['uuid'], str(self.user.uuid))
@@ -279,7 +313,7 @@ class TestUserREST(TestCase):
             'password1': 'abda1234',
             'password2': 'abda1234',
         }
-        response = client.post('/users.json', data=data)
+        response = client.post('/profile.json', data=data)
         json = response.json()
         self.assertIn('uuid', json)
         self.assertEqual(json['is_active'], False)
@@ -290,7 +324,7 @@ class TestUserREST(TestCase):
             'full_name': 'Grande Pequeno',
             'email': 'teste@gmail.com',
         }
-        response = client.put(f'/users/profile.json', data=data, content_type='application/json')
+        response = client.put(f'/profile.json', data=data, content_type='application/json')
         json = response.json()
         self.assertEqual(response.status_code, 200, msg=str(json))
         self.assertIn('uuid', json)
@@ -302,19 +336,23 @@ class TestUserREST(TestCase):
         data = {
             'full_name': 'Grande Pequeno',
             'email': 'teste@gmail.com',
-            'professional':{
+            'cpf': '567.933.940-45',
+            'address':  {
+                'street': 'Lá mesmo',
+                'street_number': '40',
+                'zipcode': '36000-222',
+                'state': 'MG',
+                'city': 'Belo Origami',
+                'neighborhood': 'Centro',
+                'complementary': 'Casa',
+            },
+            'professional': {
                 'about': 'Hello World',
-                'state': self.professional.state,
-                'city': self.professional.city,
-                'address': self.professional.address,
-                'zip_code': self.professional.zip_code,
-                'cpf': self.professional.cpf,
-                'rg': self.professional.rg,
                 'occupation': self.professional.occupation,
                 'coren': self.professional.coren,
             }
         }
-        response = client.put(f'/users/profile.json', data=data, content_type='application/json')
+        response = client.put(f'/profile.json', data=data, content_type='application/json')
         json = response.json()
         self.assertEqual(response.status_code, 200, msg=str(json))
         self.assertIn('uuid', json)
@@ -335,7 +373,7 @@ class TestUserREST(TestCase):
         }
         client.login(username=user.email, password='abda1234')
         response = client.delete(
-            '/users/profile.json',
+            '/profile.json',
             data=data,
             content_type='application/json'
         )
@@ -352,14 +390,13 @@ class TestUserREST(TestCase):
             'password2': 'abda143501',
         }
         response = client.patch(
-            '/users/profile.json',
+            '/profile.json',
             data=data,
             content_type='application/json'
         )
-        json = response.json()
+        self.assertEqual(response.status_code, 200, msg=response.content)
         user = User.objects.get(uuid=str(self.user.uuid))
-        self.assertIn('uuid', json)
-        self.assertEqual(response.status_code, 200)
+        self.assertIn('uuid', response.json())
         self.assertTrue(user.check_password(data['password1']))
 
     def test_activate_user(self):
@@ -372,13 +409,13 @@ class TestUserREST(TestCase):
             'token': account_activation_token.make_token(user)
         }
         response = client.put(
-            f'/users/{user.uuid}/',
+            f'/profile/{user.uuid}/activate.json',
             data=data,
             content_type='application/json'
         )
-        json = response.json()
-        self.assertIn('is_active', json)
-        self.assertEqual(json['is_active'], True)
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('is_active', response.json())
+        self.assertEqual(response.json()['is_active'], True)
 
     def test_list_self_availabilities(self):
         availability = Availability.objects.create(
@@ -388,7 +425,7 @@ class TestUserREST(TestCase):
         )
         availability.save()
         client.login(username=self.professional.user.email, password='abda1234')
-        response = client.get('/users/profile/availabilities.json')
+        response = client.get('/profile/availabilities.json')
         json = response.json()
         self.assertEqual(json[0]['uuid'], str(availability.uuid))
 
@@ -398,7 +435,7 @@ class TestUserREST(TestCase):
             'start_datetime': (now() + timedelta(days=1)).isoformat(),
             'end_datetime': (now() + timedelta(days=1, hours=3)).isoformat(),
         }
-        response = client.post('/users/profile/availabilities.json', data=data, content_type='application/json')
+        response = client.post('/profile/availabilities.json', data=data, content_type='application/json')
         json = response.json()
         self.assertIn('uuid', json)
 
@@ -414,7 +451,7 @@ class TestUserREST(TestCase):
             'start_datetime': (now() + timedelta(days=2)).isoformat(),
             'end_datetime': (now() + timedelta(days=2, hours=3)).isoformat(),
         }
-        response = client.put(f'/users/profile/availabilities/{availability.uuid}.json', data=data, content_type='application/json')
+        response = client.put(f'/profile/availabilities/{availability.uuid}.json', data=data, content_type='application/json')
         json = response.json()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -430,7 +467,7 @@ class TestUserREST(TestCase):
             end_datetime=(now() + timedelta(days=1, hours=2)),
         )
         availability.save()
-        response = client.delete(f'/users/profile/availabilities/{availability.uuid}.json')
+        response = client.delete(f'/profile/availabilities/{availability.uuid}.json')
         json = response.json()
         self.assertEqual(json,{
             'deleted': 1
@@ -444,7 +481,7 @@ class TestUserREST(TestCase):
             end_datetime=(now() + timedelta(days=1, hours=2)),
         )
         availability.save()
-        response = client.get(f'/users/profile/availabilities/{availability.uuid}.json')
+        response = client.get(f'/profile/availabilities/{availability.uuid}.json')
         self.assertEqual(response.status_code, 200)
     
     def test_login(self):
@@ -461,6 +498,94 @@ class TestUserREST(TestCase):
         token = response.json().get('access')
         api_client = APIClient()
         api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-        profile = api_client.get('/users/profile.json')
+        profile = api_client.get('/profile.json')
         self.assertEqual(profile.status_code, 200, profile.json())
         self.assertEqual(profile.json()['uuid'], str(self.professional.user.uuid))
+
+    def test_create_customer(self):
+        client.login(username=self.user.email, password='abda1234')
+        data = {
+            'cpf': '829.354.190-30',
+            'zip_code': '57680-970',
+            'neighborhood': 'Centro',
+            'street': 'Rua Vereador Artedorio Pinto Dâmaso',
+            'street_number': 30
+        }
+        response = client.post('/profile/customer.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', msg=response.content)
+        self.assertIn('id', response.json())
+
+    def test_get_customer(self):
+        client.login(username=self.user.email, password='abda1234')
+        self.user.create_customer()
+        response = client.get('/profile/customer.json')
+        self.assertEqual(response.get('Content-Type'), 'application/json', msg=response.content)
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertIn('id', response.json())
+
+    def test_create_card(self):
+        client.login(username=self.user.email, password='abda1234')
+        self.user.create_customer()
+        data = {
+            "card_expiration_date": "1122",
+            "card_number": "4018720572598048",
+            "card_cvv": "123",
+            "card_holder_name": "Cersei Lannister"
+        }
+        response = client.post('/profile/cards.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('id', response.json())
+
+    def test_list_cards(self):
+        client.login(username=self.user.email, password='abda1234')
+        
+        response = client.get('/profile/cards.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertGreater(len(response.json()), 0)
+
+    def test_create_recipient(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        recipient = {
+            'agency': '0932',
+            'agency_dv': '5',
+            'bank_code': '341',
+            'account': '58054',
+            'account_dv': '1',
+            'legal_name': 'HOUSE TARGARYEN'
+        }
+        response = client.post('/profile/recipient.json', data=recipient, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('id', response.json())
+
+    def test_get_recipient(self):
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.get('/profile/recipient.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('id', response.json())
+
+    @patch('pagarme.transfer.create', side_effect=pagarme_mock)
+    def test_to_withdraw(self, mock):
+        client.login(username=self.professional.user.email, password='abda1234')
+        response = client.post(f'/profile/cash_out.json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('transfer', response.json())
+
+    @patch('pagarme.transfer.create', side_effect=pagarme_mock)
+    @patch('pagarme.transfer.cancel', side_effect=pagarme_mock)
+    def test_to_cancel_cash_out(self, *args, **kwargs):
+        client.login(username=self.professional.user.email, password='abda1234')
+        cash_out = CashOut.create_withdraw(self.professional)
+        self.assert_(cash_out.was_withdrawn)
+        data = {'uuid': str(cash_out.uuid)}
+        response = client.delete(f'/profile/cash_out.json', data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.get('Content-Type'), 'application/json', response.content)
+        self.assertIn('transfer', response.json())
+        self.assertIn('was_withdrawn', response.json(), response.json())
+        self.assertEqual    (False, response.json()['was_withdrawn'], response.json())

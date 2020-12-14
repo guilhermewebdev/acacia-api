@@ -12,6 +12,8 @@ import re
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator as dtg
 from django.conf import settings
 from django.utils.timezone import now
+import pagarme
+from pagarme.resources import handler_request
 
 
 class TokenGenerator(PasswordResetTokenGenerator):
@@ -148,6 +150,8 @@ class UserManager(UM):
 
         return self._create_user(email, password, **extra_fields)
 
+
+
 class User(AbstractUser):
     objects = UserManager()
     uuid = models.UUIDField(
@@ -205,22 +209,57 @@ class User(AbstractUser):
     is_active = models.BooleanField(
         default=False
     )
+    pagarme_id = models.IntegerField(
+        null=True,
+        blank=True,
+        unique=True,
+    )
+    cpf = models.CharField(
+        max_length=14,
+        validators=[validate_cpf],
+        null=True,
+        blank=True,
+    )
+    
     USERNAME_FIELD='email'
     REQUIRED_FIELDS=['password']
 
-    __costumer = None
+    __customer = None
+    __cards = []
 
     @property
     def is_professional(self):
         return hasattr(self, 'professional')
+
+    @property
+    def unmasked_cpf(self):
+        return re.sub('[^0-9]', '', self.cpf or '')
     
     @property
     def customer(self):
-        if self.saved_in_pagarme and not self.__costumer:
-            return customer.find_by({
-                'email': self.email
-            })
-        return self.__costumer
+        if self.saved_in_pagarme and self.__customer == None:
+            self.__customer = handler_request.get(f'https://api.pagar.me/1/customers/{self.pagarme_id}', {})
+        return self.__customer
+
+    @property
+    def cards(self):
+        if not self.__cards and self.saved_in_pagarme:
+            self.__cards = handler_request.get(
+                f'https://api.pagar.me/1/cards?customer_id={self.pagarme_id}'
+            )
+        return self.__cards
+
+    @property
+    def full_cellphone(self):
+        if self.cellphone and self.cellphone_ddd:
+            return f'+55{self.cellphone_ddd}{self.cellphone}'
+        return None
+
+    @property
+    def full_telephone(self):
+        if self.telephone and self.telephone_ddd:
+            return f'+55{self.telephone_ddd}{self.telephone}'
+        return None
 
     @staticmethod
     def get_deleted_user(cls):
@@ -268,33 +307,87 @@ class User(AbstractUser):
             self.save(update_fields=['is_active'])
         return self.is_active
 
-    def create_customer(self, cpf, zip_code, neighborhood, street, street_number, phone, ddd):
+    def create_customer(self):
         if not self.saved_in_pagarme:
-            validate_cpf(cpf)
-            unmasked_cpf = re.sub('[^0-9]', '', cpf)
-            self.__customer = customer.create( {
-                'email': self.email,
+            data = {
                 'name': self.full_name,
-                'document_number': unmasked_cpf,
-                'address': {
-                    'zipcode': zip_code,
-                    'neighborhood': neighborhood,
-                    'street': street,
-                    'street_number': street_number,
-                },
-                'phone': {
-                    'number': phone,
-                    'ddd': ddd
-                }
-            })
-            if self.__customer['id'] is not None:
+                'email': self.email,
+                'external_id': str(self.uuid),
+                'country': 'br',
+                'birthday': self.born.isoformat(),
+                'type': 'individual',
+                'phone_numbers': [],
+                'documents': [{
+                    'type': 'cpf',
+                    'number': self.unmasked_cpf,
+                }]
+            }
+            if self.full_cellphone:
+                data['phone_numbers'].append(self.full_cellphone)
+            if self.full_telephone:
+                data['phone_numbers'].append(self.full_telephone)
+            self.__customer = customer.create(data)
+            if 'id' in self.__customer:
                 self.saved_in_pagarme = True
-                self.save()
+                self.pagarme_id = self.__customer['id']
+                self.save(update_fields=['saved_in_pagarme', 'pagarme_id'])
         return self.customer
+
+    def create_card(self, card):
+        return pagarme.card.create({
+            **card,
+            'customer_id': self.pagarme_id,
+        })
+
+    def validate_customer(self):
+        if not self.saved_in_pagarme or not self.pagarme_id:
+            raise ValidationError('You need create a customer')
+
+
+    def validate_cards(self):
+        if not self.cards:
+            raise ValidationError('You need create a cart')
 
     class Meta(AbstractUser.Meta):
         swappable='AUTH_USER_MODEL'
 
+
+class Address(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='address',
+    )
+    street = models.CharField( 
+        max_length=200,
+    )
+    street_number = models.CharField(
+        max_length=30,
+    )
+    zipcode = models.CharField(
+        max_length=9,
+        validators=[RegexValidator(regex='^[0-9]{5}-?[0-9]{3}$')],
+    )
+    state = models.CharField(
+        choices=STATES,
+        validators=[ValidateChoices(STATES)],
+        max_length=2,
+    )
+    city = models.CharField(
+        max_length=100,
+    )
+    neighborhood = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+    )
+    complementary = models.CharField(
+        max_length=200,
+    )
+
+
+    def __str__(self) -> str:
+        return f'{self.street}, {self.street_number}, {self.neighborhood}, {self.city} - {self.state}'
 
 class Availability(models.Model):
     RECURRENCES = (
@@ -381,28 +474,6 @@ class Professional(models.Model):
         blank=True,
         null=True,
     )
-    state = models.CharField(
-        choices=STATES,
-        validators=[ValidateChoices(STATES)],
-        max_length=2,
-    )
-    city = models.CharField(
-        max_length=100,
-    )
-    address = models.CharField(
-        max_length=200,
-    )
-    zip_code = models.CharField(
-        max_length=9,
-        validators=[RegexValidator(regex='^[0-9]{5}-?[0-9]{3}$')],
-    )
-    cpf = models.CharField(
-        max_length=14,
-        validators=[validate_cpf]
-    )
-    rg = models.CharField(
-        max_length=12,
-    )
     occupation = models.CharField(
         max_length=2,
         choices=OCCUPATIONS,
@@ -425,14 +496,19 @@ class Professional(models.Model):
     saved_in_pagarme = models.BooleanField(
         default=False
     )
+    pagarme_id = models.CharField(
+        null=True,
+        blank=True,
+        max_length=100,
+    )
     __recipient = {}
 
     @property
     def recipient(self):
         if self.saved_in_pagarme and not self.__recipient:
-            self.__recipient = recipient.find_by({
-                "email": self.user.email
-            })
+            self.__recipient = handler_request.get(
+                f'https://api.pagar.me/1/recipients/{self.pagarme_id}'
+            )
         return self.__recipient
     
     @property
@@ -445,28 +521,28 @@ class Professional(models.Model):
 
     @property
     def cash(self):
-        cash_in = float(self.receipts.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        cash_out = float(self.cash_outs.all().aggregate(models.Sum('value'))['value__sum'] or 0)
-        return cash_in - cash_out
+        cash = Professional.objects.filter(uuid=str(self.uuid)).aggregate(
+            cash_in=models.Sum('receipts__value'), cash_out=models.Sum('cash_outs__value'),
+        )
+        return (cash.get('cash_in', 0) or 0) - (cash.get('cash_out', 0) or 0)
 
-    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name, account_type):
-        unmasked_cpf = re.sub('[^0-9]', '', self.cpf)
+    def create_recipient(self, agency, agency_dv, bank_code, account, account_dv, legal_name):
         if not self.saved_in_pagarme:
             self.__recipient = recipient.create({
                 "type": "individual",
-                "document_number": unmasked_cpf,
                 "name": self.user.full_name,
                 "email": self.user.email,
                 "postback_url": self.postback_url,
+                "automatic_anticipation_enabled": True,
                 "bank_account": {
                     "agencia": agency, 
                     "agencia_dv": agency_dv, 
                     "bank_code": bank_code, 
                     "conta": account, 
                     "conta_dv": account_dv, 
-                    "document_number": unmasked_cpf, 
+                    "document_type": 'cpf',
+                    "document_number": self.user.unmasked_cpf, 
                     "legal_name": legal_name.upper(), 
-                    "type": account_type,
                 },
                 "phone_numbers": [
                     {
@@ -481,10 +557,12 @@ class Professional(models.Model):
                     }
                 ]
             })
-            if self.__recipient['id'] is not None:
+            if self.__recipient.get('id') is not None:
                 self.saved_in_pagarme = True
+                self.pagarme_id = self.__recipient['id']
+                self.save(update_fields=['saved_in_pagarme', 'pagarme_id'])
         return self.recipient
     
     @staticmethod
     def get_deleted_professional(cls):
-        return cls.object.get(user__email='deleted@user.com')
+        return cls.objects.get(user__email='deleted@user.com')
